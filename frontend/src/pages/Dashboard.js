@@ -19,18 +19,8 @@ import {
 } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import { auth, db } from '../config/firebaseConfig';
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  updateDoc,
-  doc,
-  onSnapshot
-} from 'firebase/firestore';
+import { auth } from '../config/firebaseConfig';
+import { giftService } from '../services/giftService';
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -46,42 +36,32 @@ function Dashboard() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [phone, setPhone] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       if (!user) {
         navigate('/login');
       } else {
-        loadGifts(user.uid);
+        const userPhone = localStorage.getItem('userPhone');
+        setPhone(userPhone);
+        if (userPhone) {
+          loadGifts(userPhone);
+        }
       }
     });
 
     return () => unsubscribe();
   }, [navigate]);
 
-  const loadGifts = async (userId) => {
+  const loadGifts = async (userPhone) => {
     try {
       setLoading(true);
-      const giftsRef = collection(db, 'gifts');
-      const q = query(giftsRef, where('userId', '==', userId));
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const giftsList = [];
-        snapshot.forEach((doc) => {
-          giftsList.push({ id: doc.id, ...doc.data() });
-        });
-        setGifts(giftsList);
-        setLoading(false);
-      }, (error) => {
-        console.error("Error loading gifts:", error);
-        setError(error.message);
-        setLoading(false);
-      });
-
-      return unsubscribe;
+      const giftsList = await giftService.getGifts(userPhone);
+      setGifts(giftsList);
     } catch (error) {
-      console.error("Error setting up gifts listener:", error);
       setError(error.message);
+    } finally {
       setLoading(false);
     }
   };
@@ -89,47 +69,58 @@ function Dashboard() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const userId = auth.currentUser.uid;
-      const giftData = {
-        ...formData,
-        userId,
-        createdAt: new Date(),
-        isPublic
-      };
-
-      if (editingGift) {
-        await updateDoc(doc(db, 'gifts', editingGift.id), giftData);
-      } else {
-        await addDoc(collection(db, 'gifts'), giftData);
-      }
-
+      setLoading(true);
+      const newGift = await giftService.createGift({
+        phone,
+        ...formData
+      });
+      setGifts(prev => [...prev, newGift]);
       setOpenDialog(false);
       setFormData({ name: '', description: '', url: '', image: '' });
-      setEditingGift(null);
     } catch (error) {
-      console.error('Error al guardar regalo:', error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDelete = async (giftId) => {
     try {
-      await deleteDoc(doc(db, 'gifts', giftId));
+      setLoading(true);
+      await giftService.deleteGift(phone, giftId);
+      setGifts(prev => prev.filter(gift => gift.id !== giftId));
     } catch (error) {
-      console.error('Error al eliminar regalo:', error);
       setError(error.message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleEdit = (gift) => {
-    setEditingGift(gift);
-    setFormData({
-      name: gift.name,
-      description: gift.description,
-      url: gift.url,
-      image: gift.image
-    });
-    setOpenDialog(true);
+  const handleEdit = async (gift) => {
+    try {
+      setLoading(true);
+      const updatedGift = await giftService.updateGift(phone, gift.id, formData);
+      setGifts(prev => prev.map(g => g.id === gift.id ? updatedGift : g));
+      setOpenDialog(false);
+      setFormData({ name: '', description: '', url: '', image: '' });
+      setEditingGift(null);
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVisibilityChange = async (isPublic) => {
+    try {
+      setLoading(true);
+      await giftService.updateListVisibility(phone, isPublic);
+      setGifts(prev => prev.map(gift => ({ ...gift, isPublic })));
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
