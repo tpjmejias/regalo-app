@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="RegalApp - Inicio">
+  <div class="max-w-2xl mx-auto text-center py-12">
+    <h1 class="text-4xl font-bold mb-6">Bienvenido a RegalApp</h1>
+    <p class="text-xl mb-8">
+      Encuentra y gestiona listas de regalos fácilmente usando números de teléfono
+    </p>
+    <div class="flex gap-4 justify-center">
+      <a 
+        href="/search" 
+        class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+      >
+        Buscar Listas
+      </a>
+      <a 
+        href="/login" 
+        class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+      >
+        Mi Lista de Regalos
+      </a>
+    </div>
+  </div>
+</Layout>

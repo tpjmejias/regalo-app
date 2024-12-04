@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
     apiKey: "AIzaSyB_qtSnUVannfJvFFadNLB7FrJ8JtFGc5s",
@@ -12,20 +11,5 @@ const firebaseConfig = {
     measurementId: "G-HGYZ47HJZX"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Initialize Auth
-const auth = getAuth(app);
-auth.useDeviceLanguage();
-
-// Initialize Firestore with persistence using the new method
-const db = getFirestore(app, {
-    cacheSizeBytes: 50 * 1024 * 1024, // 50 MB
-    experimentalForceLongPolling: true,
-    experimentalAutoDetectLongPolling: true,
-    ignoreUndefinedProperties: true,
-});
-
-export { auth, db };
-export default app;
+export const auth = getAuth(app); 

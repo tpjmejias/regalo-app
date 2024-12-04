@@ -1,0 +1,150 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="RegalApp - Buscar">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Buscar Lista de Regalos</h1>
+    
+    <div class="mb-8">
+      <form id="searchForm" class="flex flex-col gap-4">
+        <div>
+          <label for="phone" class="block mb-2">Número de teléfono</label>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <input
+                type="tel"
+                id="phone"
+                class="w-full p-3 border rounded-lg"
+                required
+              />
+              <div id="error-msg" class="hidden mt-1 text-red-600 text-sm"></div>
+              <div id="valid-msg" class="hidden mt-1 text-green-600 text-sm">✓ Número válido</div>
+            </div>
+            <button
+              type="submit"
+              id="searchButton"
+              class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled
+            >
+              Buscar
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div id="results" class="grid gap-4"></div>
+  </div>
+</Layout>
+
+<!-- Importar CSS de intl-tel-input -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/css/intlTelInput.css">
+
+<script>
+  let iti: any;
+
+  // Cargar intl-tel-input desde CDN
+  const loadIntlTelInput = async () => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/intlTelInput.min.js';
+    document.head.appendChild(script);
+
+    return new Promise((resolve) => {
+      script.onload = () => resolve(window.intlTelInput);
+    });
+  };
+
+  // Inicializar el selector de teléfono internacional
+  const initializePhoneInput = async () => {
+    const intlTelInput = await loadIntlTelInput();
+    const input = document.querySelector("#phone");
+    const errorMsg = document.querySelector("#error-msg");
+    const validMsg = document.querySelector("#valid-msg");
+    const submitButton = document.querySelector("#searchButton") as HTMLButtonElement;
+
+    if (input && errorMsg && validMsg) {
+      iti = intlTelInput(input, {
+        initialCountry: "mx",
+        preferredCountries: ["mx", "us", "es"],
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/utils.js",
+        separateDialCode: true,
+      });
+
+      const updateValidationUI = () => {
+        if (input instanceof HTMLInputElement) {
+          if (input.value.trim()) {
+            if (iti.isValidNumber()) {
+              validMsg.classList.remove("hidden");
+              errorMsg.classList.add("hidden");
+              submitButton.disabled = false;
+            } else {
+              validMsg.classList.add("hidden");
+              errorMsg.classList.remove("hidden");
+              errorMsg.textContent = "Número inválido";
+              submitButton.disabled = true;
+            }
+          } else {
+            validMsg.classList.add("hidden");
+            errorMsg.classList.add("hidden");
+            submitButton.disabled = true;
+          }
+        }
+      };
+
+      input.addEventListener('input', updateValidationUI);
+      input.addEventListener('change', updateValidationUI);
+      input.addEventListener('countrychange', updateValidationUI);
+    }
+  };
+
+  // Inicializar cuando el DOM esté listo
+  window.onload = async () => {
+    await initializePhoneInput();
+  };
+
+  const API_URL = 'http://localhost:5001';
+
+  document.getElementById('searchForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phoneNumber = iti.getNumber(); // Obtiene el número completo con código de país
+    
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${phoneNumber}`);
+      const gifts = await response.json();
+      
+      const resultsDiv = document.getElementById('results');
+      if (!resultsDiv) return;
+
+      if (gifts.length === 0) {
+        resultsDiv.innerHTML = '<p class="text-center text-gray-500">No se encontraron regalos para este número</p>';
+        return;
+      }
+
+      resultsDiv.innerHTML = gifts.map((gift: any) => `
+        <div class="border rounded-lg p-4 shadow-sm">
+          <h3 class="text-xl font-semibold mb-2">${gift.name}</h3>
+          ${gift.description ? `<p class="text-gray-600 mb-2">${gift.description}</p>` : ''}
+          ${gift.url ? `<a href="${gift.url}" target="_blank" class="text-blue-600 hover:underline">Ver regalo</a>` : ''}
+        </div>
+      `).join('');
+    } catch (error) {
+      console.error('Error:', error);
+      const resultsDiv = document.getElementById('results');
+      if (resultsDiv) {
+        resultsDiv.innerHTML = '<p class="text-center text-red-600">Error al buscar los regalos. Por favor, intenta de nuevo.</p>';
+      }
+    }
+  });
+</script>
+
+<style>
+  .hidden {
+    display: none;
+  }
+
+  /* Estilos para intl-tel-input */
+  .iti {
+    width: 100%;
+  }
+</style> 

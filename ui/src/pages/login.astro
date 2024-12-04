@@ -1,0 +1,192 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="RegalApp - Iniciar Sesión">
+  <div class="max-w-md mx-auto">
+    <h1 class="text-3xl font-bold mb-6">Acceder a Mi Lista</h1>
+    
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label for="loginPhone" class="block mb-2">Número de teléfono</label>
+        <input
+          type="tel"
+          id="loginPhone"
+          class="w-full p-3 border rounded-lg"
+          required
+        />
+        <div id="error-msg" class="hidden mt-1 text-red-600 text-sm"></div>
+        <div id="valid-msg" class="hidden mt-1 text-green-600 text-sm">✓ Número válido</div>
+      </div>
+      <button
+        type="submit"
+        id="sendCode"
+        class="w-full bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled
+      >
+        Enviar código
+      </button>
+    </form>
+
+    <!-- Formulario de verificación (inicialmente oculto) -->
+    <form id="verificationForm" class="space-y-4 hidden mt-4">
+      <div>
+        <label for="verificationCode" class="block mb-2">Código de verificación</label>
+        <input
+          type="text"
+          id="verificationCode"
+          placeholder="123456"
+          class="w-full p-3 border rounded-lg"
+          required
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+      >
+        Verificar código
+      </button>
+    </form>
+  </div>
+</Layout>
+
+<!-- Importar CSS de intl-tel-input -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/css/intlTelInput.css">
+
+<script>
+  import { auth } from '../config/firebase';
+  import { 
+    RecaptchaVerifier, 
+    signInWithPhoneNumber, 
+    PhoneAuthProvider, 
+    signInWithCredential 
+  } from 'firebase/auth';
+
+  let verificationId = '';
+  let iti: any;
+
+  // Cargar intl-tel-input desde CDN
+  const loadIntlTelInput = async () => {
+    const script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/intlTelInput.min.js';
+    document.head.appendChild(script);
+
+    return new Promise((resolve) => {
+      script.onload = () => resolve(window.intlTelInput);
+    });
+  };
+
+  // Inicializar el selector de teléfono internacional
+  const initializePhoneInput = async () => {
+    const intlTelInput = await loadIntlTelInput();
+    const input = document.querySelector("#loginPhone");
+    const errorMsg = document.querySelector("#error-msg");
+    const validMsg = document.querySelector("#valid-msg");
+    const submitButton = document.querySelector("#sendCode") as HTMLButtonElement;
+
+    if (input && errorMsg && validMsg) {
+      iti = intlTelInput(input, {
+        initialCountry: "mx",
+        preferredCountries: ["mx", "us", "es"],
+        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/utils.js",
+        separateDialCode: true,
+      });
+
+      const updateValidationUI = () => {
+        if (input instanceof HTMLInputElement) {
+          if (input.value.trim()) {
+            if (iti.isValidNumber()) {
+              validMsg.classList.remove("hidden");
+              errorMsg.classList.add("hidden");
+              submitButton.disabled = false;
+            } else {
+              validMsg.classList.add("hidden");
+              errorMsg.classList.remove("hidden");
+              errorMsg.textContent = "Número inválido";
+              submitButton.disabled = true;
+            }
+          } else {
+            validMsg.classList.add("hidden");
+            errorMsg.classList.add("hidden");
+            submitButton.disabled = true;
+          }
+        }
+      };
+
+      input.addEventListener('input', updateValidationUI);
+      input.addEventListener('change', updateValidationUI);
+      input.addEventListener('countrychange', updateValidationUI);
+    }
+  };
+
+  // Inicializar todo cuando el DOM esté listo
+  window.onload = async () => {
+    await initializePhoneInput();
+
+    // Inicializar reCAPTCHA
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'sendCode', {
+      'size': 'invisible',
+      'callback': () => {
+        // reCAPTCHA resuelto
+      }
+    });
+  };
+
+  // Enviar código SMS
+  document.getElementById('loginForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const phoneNumber = iti.getNumber(); // Obtiene el número completo con código de país
+    
+    try {
+      const appVerifier = window.recaptchaVerifier;
+      const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+      verificationId = confirmationResult.verificationId;
+      
+      // Mostrar formulario de verificación
+      document.getElementById('loginForm')?.classList.add('hidden');
+      document.getElementById('verificationForm')?.classList.remove('hidden');
+    } catch (error) {
+      console.error('Error al enviar SMS:', error);
+      alert('Error al enviar el código SMS. Por favor, intenta de nuevo.');
+    }
+  });
+
+  // Verificar código
+  document.getElementById('verificationForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const code = (document.getElementById('verificationCode') as HTMLInputElement).value;
+    
+    try {
+      // Crear las credenciales
+      const credential = PhoneAuthProvider.credential(verificationId, code);
+      
+      // Iniciar sesión con las credenciales
+      const userCredential = await signInWithCredential(auth, credential);
+      const user = userCredential.user;
+      
+      if (user && user.phoneNumber) {
+        // Guardar el teléfono verificado en sessionStorage
+        sessionStorage.setItem('userPhone', user.phoneNumber);
+        
+        // Redirigir al dashboard
+        window.location.href = '/dashboard';
+      } else {
+        throw new Error('No se pudo obtener el número de teléfono');
+      }
+    } catch (error) {
+      console.error('Error al verificar código:', error);
+      alert('Código inválido. Por favor, intenta de nuevo.');
+    }
+  });
+</script>
+
+<style>
+  .hidden {
+    display: none;
+  }
+
+  /* Estilos para intl-tel-input */
+  .iti {
+    width: 100%;
+  }
+</style> 

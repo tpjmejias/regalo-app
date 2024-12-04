@@ -1,0 +1,194 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="RegalApp - Mi Lista">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl font-bold">Mi Lista de Regalos</h1>
+      <p id="userPhone" class="text-gray-600"></p>
+    </div>
+
+    <div class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4">Agregar Regalo</h2>
+      <form id="giftForm" class="grid gap-4">
+        <div>
+          <label for="name" class="block mb-2">Nombre del Regalo</label>
+          <input
+            type="text"
+            id="name"
+            class="w-full p-3 border rounded-lg"
+            required
+          />
+        </div>
+        <div>
+          <label for="description" class="block mb-2">Descripción</label>
+          <textarea
+            id="description"
+            class="w-full p-3 border rounded-lg"
+            rows="3"
+          ></textarea>
+        </div>
+        <div>
+          <label for="url" class="block mb-2">URL</label>
+          <input
+            type="url"
+            id="url"
+            class="w-full p-3 border rounded-lg"
+            placeholder="https://ejemplo.com/regalo"
+          />
+        </div>
+        <button
+          type="submit"
+          class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+        >
+          Agregar Regalo
+        </button>
+      </form>
+    </div>
+
+    <div>
+      <h2 class="text-2xl font-semibold mb-4">Mis Regalos</h2>
+      <div id="giftsList" class="grid gap-4"></div>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { auth } from '../config/firebase';
+  const API_URL = 'http://localhost:5001';
+  
+  // Verificar si el usuario está autenticado
+  auth.onAuthStateChanged((user) => {
+    if (!user) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    const userPhone = user.phoneNumber;
+    if (!userPhone) {
+      window.location.href = '/login';
+      return;
+    }
+    
+    // Mostrar el teléfono del usuario
+    const phoneElement = document.getElementById('userPhone');
+    if (phoneElement) {
+      phoneElement.textContent = `Tel: ${userPhone}`;
+    }
+    
+    // Cargar los regalos
+    loadGifts(userPhone);
+
+    // Configurar el formulario para agregar regalos
+    setupGiftForm(userPhone);
+  });
+
+  // Cargar regalos
+  async function loadGifts(userPhone: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${userPhone}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar los regalos');
+      }
+      const gifts = await response.json();
+      
+      const giftsList = document.getElementById('giftsList');
+      if (!giftsList) return;
+
+      if (gifts.length === 0) {
+        giftsList.innerHTML = '<p class="text-gray-500 text-center">No tienes regalos en tu lista aún.</p>';
+        return;
+      }
+
+      giftsList.innerHTML = gifts.map((gift: any) => `
+        <div class="border rounded-lg p-4 shadow-sm">
+          <h3 class="text-xl font-semibold mb-2">${gift.name}</h3>
+          ${gift.description ? `<p class="text-gray-600 mb-2">${gift.description}</p>` : ''}
+          ${gift.url ? `<a href="${gift.url}" target="_blank" class="text-blue-600 hover:underline mb-2 block">Ver regalo</a>` : ''}
+          <button
+            onclick="deleteGift('${gift.id}')"
+            class="text-red-600 hover:text-red-800"
+          >
+            Eliminar
+          </button>
+        </div>
+      `).join('');
+    } catch (error) {
+      console.error('Error:', error);
+      const giftsList = document.getElementById('giftsList');
+      if (giftsList) {
+        giftsList.innerHTML = '<p class="text-red-600 text-center">Error al cargar los regalos. Por favor, intenta de nuevo.</p>';
+      }
+    }
+  }
+
+  // Configurar formulario para agregar regalos
+  function setupGiftForm(userPhone: string) {
+    const form = document.getElementById('giftForm');
+    form?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const formData = {
+        phone: userPhone,
+        name: (document.getElementById('name') as HTMLInputElement).value,
+        description: (document.getElementById('description') as HTMLTextAreaElement).value,
+        url: (document.getElementById('url') as HTMLInputElement).value,
+        isPublic: true
+      };
+
+      try {
+        const response = await fetch(`${API_URL}/api/gifts`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (!response.ok) {
+          throw new Error('Error al guardar el regalo');
+        }
+
+        // Limpiar el formulario
+        (e.target as HTMLFormElement).reset();
+        
+        // Recargar la lista de regalos
+        loadGifts(userPhone);
+
+        // Mostrar mensaje de éxito
+        alert('Regalo agregado exitosamente');
+      } catch (error) {
+        console.error('Error:', error);
+        alert('Error al guardar el regalo. Por favor, intenta de nuevo.');
+      }
+    });
+  }
+
+  // Eliminar regalo
+  window.deleteGift = async (giftId: string) => {
+    const userPhone = auth.currentUser?.phoneNumber;
+    if (!userPhone) return;
+
+    if (!confirm('¿Estás seguro de que deseas eliminar este regalo?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${userPhone}/${giftId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al eliminar el regalo');
+      }
+
+      // Recargar la lista de regalos
+      loadGifts(userPhone);
+      
+      // Mostrar mensaje de éxito
+      alert('Regalo eliminado exitosamente');
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar el regalo. Por favor, intenta de nuevo.');
+    }
+  };
+</script> 
