@@ -2,18 +2,17 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const giftsRoutes = require('./routes/gifts');
+const cors = require('cors');
 
 const app = express();
 
-app.use(express.json());
-
 // Configuración de CORS
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-  res.header('Access-Control-Allow-Methods', 'GET, POST');
-  next();
-});
+app.use(cors());
+
+// Middleware para manejar preflight requests
+app.options('*', cors());
+
+app.use(express.json());
 
 // Configuración de Swagger UI
 app.use('/api-docs', swaggerUi.serve);
@@ -24,6 +23,11 @@ app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
 
 // Rutas
 app.use('/api/gifts', giftsRoutes);
+
+// Ruta de prueba para verificar que el servidor está funcionando
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', message: 'Server is running' });
+});
 
 // Manejador de errores
 app.use((err, req, res, next) => {

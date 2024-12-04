@@ -3,54 +3,46 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="RegalApp - Mi Lista">
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-7xl mx-auto">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-3xl font-bold">Mi Lista de Regalos</h1>
       <p id="userPhone" class="text-gray-600"></p>
     </div>
 
-    <div class="mb-8">
-      <h2 class="text-2xl font-semibold mb-4">Agregar Regalo</h2>
-      <form id="giftForm" class="grid gap-4">
-        <div>
-          <label for="name" class="block mb-2">Nombre del Regalo</label>
-          <input
-            type="text"
-            id="name"
-            class="w-full p-3 border rounded-lg"
-            required
-          />
+    <!-- Modal para agregar regalo -->
+    <div id="addGiftModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
+      <div class="bg-white rounded-lg p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-2xl font-semibold">Agregar Regalo</h2>
+          <button id="closeModal" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div>
-          <label for="description" class="block mb-2">Descripción</label>
-          <textarea
-            id="description"
-            class="w-full p-3 border rounded-lg"
-            rows="3"
-          ></textarea>
-        </div>
-        <div>
-          <label for="url" class="block mb-2">URL</label>
-          <input
-            type="url"
-            id="url"
-            class="w-full p-3 border rounded-lg"
-            placeholder="https://ejemplo.com/regalo"
-          />
-        </div>
-        <button
-          type="submit"
-          class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-        >
-          Agregar Regalo
-        </button>
-      </form>
+        <form id="giftForm" class="space-y-4">
+          <div>
+            <label for="url" class="block mb-2">URL del Regalo</label>
+            <input
+              type="url"
+              id="url"
+              class="w-full p-3 border rounded-lg"
+              placeholder="https://www.ejemplo.com/producto..."
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
+          >
+            Guardar Regalo
+          </button>
+        </form>
+      </div>
     </div>
 
-    <div>
-      <h2 class="text-2xl font-semibold mb-4">Mis Regalos</h2>
-      <div id="giftsList" class="grid gap-4"></div>
-    </div>
+    <!-- Grid de regalos -->
+    <div id="giftsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </div>
 </Layout>
 
@@ -82,57 +74,39 @@ import Layout from '../layouts/Layout.astro';
 
     // Configurar el formulario para agregar regalos
     setupGiftForm(userPhone);
+    setupModal();
   });
 
-  // Cargar regalos
-  async function loadGifts(userPhone: string) {
-    try {
-      const response = await fetch(`${API_URL}/api/gifts/${userPhone}`);
-      if (!response.ok) {
-        throw new Error('Error al cargar los regalos');
-      }
-      const gifts = await response.json();
-      
-      const giftsList = document.getElementById('giftsList');
-      if (!giftsList) return;
+  // Configurar el modal
+  function setupModal() {
+    const modal = document.getElementById('addGiftModal');
+    const closeBtn = document.getElementById('closeModal');
+    const form = document.getElementById('giftForm');
 
-      if (gifts.length === 0) {
-        giftsList.innerHTML = '<p class="text-gray-500 text-center">No tienes regalos en tu lista aún.</p>';
-        return;
-      }
+    closeBtn?.addEventListener('click', () => {
+      modal?.classList.add('hidden');
+      form?.reset();
+    });
 
-      giftsList.innerHTML = gifts.map((gift: any) => `
-        <div class="border rounded-lg p-4 shadow-sm">
-          <h3 class="text-xl font-semibold mb-2">${gift.name}</h3>
-          ${gift.description ? `<p class="text-gray-600 mb-2">${gift.description}</p>` : ''}
-          ${gift.url ? `<a href="${gift.url}" target="_blank" class="text-blue-600 hover:underline mb-2 block">Ver regalo</a>` : ''}
-          <button
-            onclick="deleteGift('${gift.id}')"
-            class="text-red-600 hover:text-red-800"
-          >
-            Eliminar
-          </button>
-        </div>
-      `).join('');
-    } catch (error) {
-      console.error('Error:', error);
-      const giftsList = document.getElementById('giftsList');
-      if (giftsList) {
-        giftsList.innerHTML = '<p class="text-red-600 text-center">Error al cargar los regalos. Por favor, intenta de nuevo.</p>';
+    // Cerrar modal al hacer clic fuera
+    modal?.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.classList.add('hidden');
+        form?.reset();
       }
-    }
+    });
   }
 
   // Configurar formulario para agregar regalos
   function setupGiftForm(userPhone: string) {
     const form = document.getElementById('giftForm');
+    const modal = document.getElementById('addGiftModal');
+
     form?.addEventListener('submit', async (e) => {
       e.preventDefault();
       
       const formData = {
         phone: userPhone,
-        name: (document.getElementById('name') as HTMLInputElement).value,
-        description: (document.getElementById('description') as HTMLTextAreaElement).value,
         url: (document.getElementById('url') as HTMLInputElement).value,
         isPublic: true
       };
@@ -153,6 +127,9 @@ import Layout from '../layouts/Layout.astro';
         // Limpiar el formulario
         (e.target as HTMLFormElement).reset();
         
+        // Cerrar el modal
+        modal?.classList.add('hidden');
+        
         // Recargar la lista de regalos
         loadGifts(userPhone);
 
@@ -163,6 +140,63 @@ import Layout from '../layouts/Layout.astro';
         alert('Error al guardar el regalo. Por favor, intenta de nuevo.');
       }
     });
+  }
+
+  // Cargar regalos
+  async function loadGifts(userPhone: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${userPhone}`);
+      if (!response.ok) {
+        throw new Error('Error al cargar los regalos');
+      }
+      const gifts = await response.json();
+      
+      const giftsList = document.getElementById('giftsList');
+      if (!giftsList) return;
+
+      // Crear el HTML para los regalos existentes
+      const giftsHTML = gifts.map((gift: any) => `
+        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
+          <div class="p-4">
+            <a href="${gift.url}" target="_blank" class="text-blue-600 hover:text-blue-800 block break-all">
+              ${gift.url}
+            </a>
+            <div class="flex justify-end mt-2">
+              <button
+                onclick="deleteGift('${gift.id}')"
+                class="text-red-600 hover:text-red-800"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+
+      // Agregar el botón de añadir al final
+      const addButtonHTML = `
+        <button 
+          onclick="document.getElementById('addGiftModal').classList.remove('hidden')"
+          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col items-center justify-center h-full min-h-[100px] border-2 border-dashed border-gray-300 hover:border-gray-400"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span class="text-gray-500 mt-2">Agregar Regalo</span>
+        </button>
+      `;
+
+      // Combinar todo
+      giftsList.innerHTML = giftsHTML + addButtonHTML;
+    } catch (error) {
+      console.error('Error:', error);
+      const giftsList = document.getElementById('giftsList');
+      if (giftsList) {
+        giftsList.innerHTML = '<p class="text-red-600 text-center col-span-full">Error al cargar los regalos. Por favor, intenta de nuevo.</p>';
+      }
+    }
   }
 
   // Eliminar regalo
@@ -191,4 +225,28 @@ import Layout from '../layouts/Layout.astro';
       alert('Error al eliminar el regalo. Por favor, intenta de nuevo.');
     }
   };
-</script> 
+</script>
+
+<style>
+  /* Asegurar que los items de la galería tengan la misma altura */
+  .aspect-w-1 {
+    position: relative;
+    padding-bottom: 100%;
+  }
+  
+  .aspect-h-1 {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+
+  /* Limitar el número de líneas en la descripción */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+</style> 
