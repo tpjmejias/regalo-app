@@ -1,16 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Header from '../components/Header.astro';
+import Logo from '../components/Logo.astro';
+import { colorThemes } from '../config/theme';
+
+// Por defecto usamos el primer tema
+const defaultTheme = colorThemes[0];
 ---
 
 <Layout title="Iniciar Sesión - LinkGift">
-  <div class="min-h-screen bg-gradient-to-br from-primary-500 to-secondary-500">
+  <div id="pageBackground" class={`min-h-screen bg-gradient-to-br ${defaultTheme.gradient}`}>
     <div class="min-h-screen bg-white/95 backdrop-blur-sm flex flex-col items-center">
-      <Header />
-      
-      <div class="w-full max-w-md mx-auto px-4">
+      <div class="w-full max-w-md mx-auto px-4 pt-20">
         <!-- Login Form -->
-        <div class="text-center mb-8">
+        <div class="text-center mb-12">
+          <Logo size="lg" class="justify-center mb-8" />
           <h1 class="text-3xl font-bold text-gray-900 mb-4">Inicia sesión</h1>
           <p class="text-gray-600">Usa tu número de teléfono para acceder a tu lista de regalos</p>
         </div>
@@ -32,7 +35,9 @@ import Header from '../components/Header.astro';
 
           <button
             id="sendCodeBtn"
-            class="w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            data-use-theme
+            data-base-classes="w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            class={`w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r ${defaultTheme.gradient} hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2`}
           >
             <span>Enviar código</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -65,7 +70,9 @@ import Header from '../components/Header.astro';
 
           <button
             id="verifyCodeBtn"
-            class="w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            data-use-theme
+            data-base-classes="w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            class={`w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r ${defaultTheme.gradient} hover:opacity-90 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2`}
           >
             <span>Verificar código</span>
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -93,6 +100,23 @@ import Header from '../components/Header.astro';
 </Layout>
 
 <script>
+  // Recuperar y aplicar el tema guardado
+  const savedTheme = localStorage.getItem('linkgift:theme');
+  if (savedTheme) {
+    const pageBackground = document.getElementById('pageBackground');
+    if (pageBackground) {
+      pageBackground.className = `min-h-screen bg-gradient-to-br ${savedTheme}`;
+    }
+    // Actualizar otros elementos que usen el tema (botones, etc)
+    const themeElements = document.querySelectorAll('[data-use-theme]');
+    themeElements.forEach(element => {
+      if (element instanceof HTMLElement) {
+        const baseClasses = element.dataset.baseClasses || '';
+        element.className = `${baseClasses} ${savedTheme}`;
+      }
+    });
+  }
+
   import intlTelInput from 'intl-tel-input';
   import 'intl-tel-input/build/css/intlTelInput.css';
   import { auth } from '../config/firebase';
