@@ -158,9 +158,15 @@ const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
 </div>
 
 <script>
+  interface CustomEvent {
+    detail: {
+      iconId?: string;
+      themeId?: string;
+    };
+  }
+
   const editProfileBtn = document.getElementById('editProfileBtn');
   const profileModal = document.getElementById('profileModal');
-  const modalOverlay = document.getElementById('modalOverlay');
   const closeProfileModal = document.getElementById('closeProfileModal');
   const saveChangesBtn = document.getElementById('saveChangesBtn');
   const iconOptions = document.querySelectorAll('.icon-option');
@@ -176,7 +182,6 @@ const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
   // Mostrar modal
   editProfileBtn?.addEventListener('click', () => {
     profileModal?.classList.remove('-translate-y-full');
-    modalOverlay?.classList.remove('opacity-0', 'pointer-events-none');
     document.body.style.overflow = 'hidden';
   });
 
@@ -188,12 +193,10 @@ const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
       }
     }
     profileModal?.classList.add('-translate-y-full');
-    modalOverlay?.classList.add('opacity-0', 'pointer-events-none');
     document.body.style.overflow = '';
   };
 
   closeProfileModal?.addEventListener('click', closeModal);
-  modalOverlay?.addEventListener('click', closeModal);
 
   // Seleccionar ícono
   iconOptions.forEach(option => {
@@ -208,8 +211,8 @@ const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
       option.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50');
 
       // Actualizar vista previa
-      if (iconPath) {
-        const previewPath = previewIcon?.querySelector('path');
+      if (iconPath && previewIcon) {
+        const previewPath = previewIcon.querySelector('path');
         if (previewPath) {
           previewPath.setAttribute('d', iconPath);
         }
