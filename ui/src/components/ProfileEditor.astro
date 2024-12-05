@@ -1,0 +1,260 @@
+---
+import { profileIcons } from '../config/profileIcons';
+import { colorThemes } from '../config/theme';
+
+interface Props {
+  selectedIcon?: string;
+  selectedTheme?: string;
+}
+
+const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
+---
+
+<div class="relative inline-block">
+  <div
+    class={`w-24 h-24 bg-gradient-to-br ${colorThemes.find(theme => theme.id === selectedTheme)?.gradient || colorThemes[0].gradient} rounded-full flex items-center justify-center text-white`}
+    id="profileIcon"
+  >
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      class="w-12 h-12" 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor"
+      id="selectedIcon"
+    >
+      <path 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        stroke-width="2" 
+        d={profileIcons.find(icon => icon.id === selectedIcon)?.path || profileIcons[0].path}
+      />
+    </svg>
+  </div>
+
+  <button
+    type="button"
+    id="editProfileBtn"
+    class="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-primary-500 transition-colors"
+    title="Editar perfil"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    </svg>
+  </button>
+
+  <!-- Panel deslizante -->
+  <div
+    id="profileModal"
+    class="fixed inset-x-0 top-0 transform -translate-y-full transition-transform duration-300 ease-in-out z-50 bg-white shadow-lg rounded-b-2xl"
+    style="max-height: 90vh; overflow-y: auto;"
+  >
+    <div class="container max-w-lg mx-auto px-4 py-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Personaliza tu perfil</h3>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-gray-500"
+          id="closeProfileModal"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Vista previa -->
+      <div class="mb-8 flex justify-center">
+        <div
+          class={`w-24 h-24 bg-gradient-to-br ${colorThemes[0].gradient} rounded-full flex items-center justify-center text-white preview-icon`}
+          id="previewIcon"
+        >
+          <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            class="w-12 h-12" 
+            fill="none" 
+            viewBox="0 0 24 24" 
+            stroke="currentColor"
+          >
+            <path 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              stroke-width="2" 
+              d={profileIcons.find(icon => icon.id === selectedIcon)?.path || profileIcons[0].path}
+            />
+          </svg>
+        </div>
+      </div>
+
+      <!-- Sección de íconos -->
+      <div class="mb-8">
+        <h4 class="text-lg font-medium text-gray-900 mb-4">Elige un ícono</h4>
+        <div class="grid grid-cols-4 sm:grid-cols-5 gap-4">
+          {profileIcons.map(icon => (
+            <button
+              type="button"
+              class={`aspect-square bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors icon-option group ${selectedIcon === icon.id ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
+              data-icon-id={icon.id}
+              data-icon-path={icon.path}
+            >
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                class="w-8 h-8 text-gray-600 group-hover:text-gray-800 transition-colors" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                stroke="currentColor"
+              >
+                <path 
+                  stroke-linecap="round" 
+                  stroke-linejoin="round" 
+                  stroke-width="2" 
+                  d={icon.path}
+                />
+              </svg>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Sección de temas -->
+      <div class="mb-8">
+        <h4 class="text-lg font-medium text-gray-900 mb-4">Elige un tema</h4>
+        <div class="grid grid-cols-1 gap-4">
+          {colorThemes.map(theme => (
+            <button
+              type="button"
+              class={`p-4 rounded-xl hover:bg-gray-50 transition-colors theme-option group flex items-center gap-4 ${selectedTheme === theme.id ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
+              data-theme-id={theme.id}
+              data-theme-gradient={theme.gradient}
+            >
+              <div class={`w-16 h-8 rounded-full bg-gradient-to-r ${theme.gradient}`}></div>
+              <span class="text-gray-700 group-hover:text-gray-900 font-medium">{theme.name}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <!-- Botón de guardar -->
+      <div class="sticky bottom-0 bg-white pt-4 pb-2">
+        <button
+          type="button"
+          id="saveChangesBtn"
+          class="w-full px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:opacity-90 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+        >
+          <span>Guardar cambios</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay de fondo -->
+  <div
+    id="modalOverlay"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm opacity-0 pointer-events-none transition-opacity duration-300 ease-in-out z-40"
+  ></div>
+</div>
+
+<script>
+  const editProfileBtn = document.getElementById('editProfileBtn');
+  const profileModal = document.getElementById('profileModal');
+  const modalOverlay = document.getElementById('modalOverlay');
+  const closeProfileModal = document.getElementById('closeProfileModal');
+  const saveChangesBtn = document.getElementById('saveChangesBtn');
+  const iconOptions = document.querySelectorAll('.icon-option');
+  const themeOptions = document.querySelectorAll('.theme-option');
+  const selectedIcon = document.getElementById('selectedIcon');
+  const profileIcon = document.getElementById('profileIcon');
+  const previewIcon = document.getElementById('previewIcon');
+
+  let currentIconId = '';
+  let currentThemeId = '';
+  let hasChanges = false;
+
+  // Mostrar modal
+  editProfileBtn?.addEventListener('click', () => {
+    profileModal?.classList.remove('-translate-y-full');
+    modalOverlay?.classList.remove('opacity-0', 'pointer-events-none');
+    document.body.style.overflow = 'hidden';
+  });
+
+  // Cerrar modal
+  const closeModal = () => {
+    if (hasChanges) {
+      if (!confirm('¿Estás seguro de que quieres cerrar sin guardar los cambios?')) {
+        return;
+      }
+    }
+    profileModal?.classList.add('-translate-y-full');
+    modalOverlay?.classList.add('opacity-0', 'pointer-events-none');
+    document.body.style.overflow = '';
+  };
+
+  closeProfileModal?.addEventListener('click', closeModal);
+  modalOverlay?.addEventListener('click', closeModal);
+
+  // Seleccionar ícono
+  iconOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const iconId = option.getAttribute('data-icon-id');
+      const iconPath = option.getAttribute('data-icon-path');
+
+      // Actualizar selección visual
+      iconOptions.forEach(opt => {
+        opt.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-50');
+      });
+      option.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50');
+
+      // Actualizar vista previa
+      if (iconPath) {
+        const previewPath = previewIcon?.querySelector('path');
+        if (previewPath) {
+          previewPath.setAttribute('d', iconPath);
+        }
+      }
+
+      currentIconId = iconId || '';
+      hasChanges = true;
+    });
+  });
+
+  // Seleccionar tema
+  themeOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const themeId = option.getAttribute('data-theme-id');
+      const themeGradient = option.getAttribute('data-theme-gradient');
+
+      // Actualizar selección visual
+      themeOptions.forEach(opt => {
+        opt.classList.remove('ring-2', 'ring-primary-500', 'bg-primary-50');
+      });
+      option.classList.add('ring-2', 'ring-primary-500', 'bg-primary-50');
+
+      // Actualizar vista previa
+      if (themeGradient && previewIcon) {
+        previewIcon.className = `w-24 h-24 bg-gradient-to-br ${themeGradient} rounded-full flex items-center justify-center text-white preview-icon`;
+      }
+
+      currentThemeId = themeId || '';
+      hasChanges = true;
+    });
+  });
+
+  // Guardar cambios
+  saveChangesBtn?.addEventListener('click', () => {
+    if (currentIconId) {
+      document.dispatchEvent(new CustomEvent('iconSelected', {
+        detail: { iconId: currentIconId }
+      }));
+    }
+    if (currentThemeId) {
+      document.dispatchEvent(new CustomEvent('themeSelected', {
+        detail: { themeId: currentThemeId }
+      }));
+    }
+    hasChanges = false;
+    closeModal();
+  });
+</script> 

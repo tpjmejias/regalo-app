@@ -1,0 +1,32 @@
+---
+import { theme } from '../config/theme';
+
+interface Props {
+  showText?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { showText = true, size = 'md', class: className = '' } = Astro.props;
+
+const sizes = {
+  sm: 'w-6 h-6',
+  md: 'w-8 h-8',
+  lg: 'w-10 h-10'
+} as const;
+
+const textSizes = {
+  sm: 'text-lg',
+  md: 'text-xl',
+  lg: 'text-2xl'
+} as const;
+---
+
+<a href="/" class={`inline-flex items-center gap-2 ${className}`}>
+  <div class={`text-primary-500 ${sizes[size]}`} set:html={theme.logo.icon} />
+  {showText && (
+    <span class={`font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-secondary-500 ${textSizes[size]}`}>
+      {theme.logo.text}
+    </span>
+  )}
+</a> 

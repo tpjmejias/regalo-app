@@ -1,228 +1,325 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import ProfileEditor from '../components/ProfileEditor.astro';
 ---
 
-<Layout title="RegalApp - Mi Lista">
-  <div class="max-w-7xl mx-auto">
-    <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl font-bold">Mi Lista de Regalos</h1>
-      <p id="userPhone" class="text-gray-600"></p>
-    </div>
-
-    <!-- Modal para agregar regalo -->
-    <div id="addGiftModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center">
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="text-2xl font-semibold">Agregar Regalo</h2>
-          <button id="closeModal" class="text-gray-500 hover:text-gray-700">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+<Layout title="Mi Lista - LinkGift">
+  <div class="min-h-screen bg-gradient-to-br from-primary-500 to-secondary-500">
+    <div class="min-h-screen bg-white/95 backdrop-blur-sm">
+      <Header />
+      
+      <div class="max-w-xl mx-auto px-4">
+        <!-- Profile Section -->
+        <div class="text-center mb-12">
+          <div class="mb-4">
+            <ProfileEditor client:load />
+          </div>
+          <p class="text-lg font-medium text-gray-900 mb-2">
+            <span id="userPhone"></span>
+          </p>
+          <h1 class="text-3xl font-bold text-gray-900 mb-8">Mi Lista de Regalos</h1>
+          
+          <button
+            id="copyLinkBtn"
+            class="inline-flex items-center px-6 py-3 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 transition-all shadow hover:shadow-md"
+          >
+            <span id="linkText">Copiar enlace</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
             </svg>
           </button>
         </div>
-        <form id="giftForm" class="space-y-4">
-          <div>
-            <label for="url" class="block mb-2">URL del Regalo</label>
-            <input
-              type="url"
-              id="url"
-              class="w-full p-3 border rounded-lg"
-              placeholder="https://www.ejemplo.com/producto..."
-              required
-            />
+
+        <!-- Add Link Form -->
+        <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">Agregar enlace</h2>
+          <form id="addLinkForm" class="space-y-4">
+            <div class="relative">
+              <input
+                type="url"
+                id="linkInput"
+                class="w-full px-4 py-3 text-base border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                placeholder="https://ejemplo.com/producto"
+                required
+              />
+              <div id="linkError" class="absolute left-0 right-0 top-full mt-1 text-sm text-red-500 hidden"></div>
+            </div>
+
+            <button
+              type="submit"
+              class="w-full px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            >
+              <span>Agregar Regalo</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+          </form>
+        </div>
+
+        <!-- Links List -->
+        <div class="space-y-4" id="linksList">
+          <div class="animate-pulse space-y-4">
+            <div class="h-16 bg-white rounded-xl shadow"></div>
+            <div class="h-16 bg-white rounded-xl shadow"></div>
+            <div class="h-16 bg-white rounded-xl shadow"></div>
           </div>
-          <button
-            type="submit"
-            class="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700"
-          >
-            Guardar Regalo
-          </button>
-        </form>
+        </div>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="text-center py-12 hidden">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4M12 20V4" />
+          </svg>
+          <p class="text-gray-500">Tu lista está vacía. ¡Agrega algunos regalos!</p>
+        </div>
       </div>
     </div>
-
-    <!-- Grid de regalos -->
-    <div id="giftsList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"></div>
   </div>
 </Layout>
 
 <script>
   import { auth } from '../config/firebase';
-  const API_URL = 'http://localhost:5001';
+  import { colorThemes } from '../config/theme';
   
-  // Verificar si el usuario está autenticado
-  auth.onAuthStateChanged((user) => {
-    if (!user) {
-      window.location.href = '/login';
-      return;
-    }
-    
-    const userPhone = user.phoneNumber;
-    if (!userPhone) {
-      window.location.href = '/login';
-      return;
-    }
-    
-    // Mostrar el teléfono del usuario
-    const phoneElement = document.getElementById('userPhone');
-    if (phoneElement) {
-      phoneElement.textContent = `Tel: ${userPhone}`;
-    }
-    
-    // Cargar los regalos
-    loadGifts(userPhone);
+  const API_URL = 'http://localhost:5001';
+  let userPhone = '';
 
-    // Configurar el formulario para agregar regalos
-    setupGiftForm(userPhone);
-    setupModal();
-  });
+  // Elementos del DOM
+  const userPhoneElement = document.getElementById('userPhone');
+  const copyLinkBtn = document.getElementById('copyLinkBtn');
+  const linkText = document.getElementById('linkText');
+  const addLinkForm = document.getElementById('addLinkForm');
+  const linkInput = document.getElementById('linkInput') as HTMLInputElement;
+  const linkError = document.getElementById('linkError');
+  const linksList = document.getElementById('linksList');
+  const emptyState = document.getElementById('emptyState');
 
-  // Configurar el modal
-  function setupModal() {
-    const modal = document.getElementById('addGiftModal');
-    const closeBtn = document.getElementById('closeModal');
-    const form = document.getElementById('giftForm');
-
-    closeBtn?.addEventListener('click', () => {
-      modal?.classList.add('hidden');
-      form?.reset();
-    });
-
-    // Cerrar modal al hacer clic fuera
-    modal?.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        modal.classList.add('hidden');
-        form?.reset();
-      }
-    });
-  }
-
-  // Configurar formulario para agregar regalos
-  function setupGiftForm(userPhone: string) {
-    const form = document.getElementById('giftForm');
-    const modal = document.getElementById('addGiftModal');
-
-    form?.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      
-      const formData = {
-        phone: userPhone,
-        url: (document.getElementById('url') as HTMLInputElement).value,
-        isPublic: true
-      };
-
-      try {
-        const response = await fetch(`${API_URL}/api/gifts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(formData),
-        });
-
-        if (!response.ok) {
-          throw new Error('Error al guardar el regalo');
-        }
-
-        // Limpiar el formulario
-        (e.target as HTMLFormElement).reset();
-        
-        // Cerrar el modal
-        modal?.classList.add('hidden');
-        
-        // Recargar la lista de regalos
-        loadGifts(userPhone);
-
-        // Mostrar mensaje de éxito
-        alert('Regalo agregado exitosamente');
-      } catch (error) {
-        console.error('Error:', error);
-        alert('Error al guardar el regalo. Por favor, intenta de nuevo.');
-      }
-    });
-  }
-
-  // Cargar regalos
-  async function loadGifts(userPhone: string) {
-    try {
-      const response = await fetch(`${API_URL}/api/gifts/${userPhone}`);
-      if (!response.ok) {
-        throw new Error('Error al cargar los regalos');
-      }
-      const gifts = await response.json();
-      
-      const giftsList = document.getElementById('giftsList');
-      if (!giftsList) return;
-
-      // Crear el HTML para los regalos existentes
-      const giftsHTML = gifts.map((gift: any) => `
-        <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300">
-          <div class="p-4">
-            <a href="${gift.url}" target="_blank" class="text-blue-600 hover:text-blue-800 block break-all">
-              ${gift.url}
-            </a>
-            <div class="flex justify-end mt-2">
-              <button
-                onclick="deleteGift('${gift.id}')"
-                class="text-red-600 hover:text-red-800"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
-            </div>
-          </div>
-        </div>
-      `).join('');
-
-      // Agregar el botón de añadir al final
-      const addButtonHTML = `
-        <button 
-          onclick="document.getElementById('addGiftModal').classList.remove('hidden')"
-          class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col items-center justify-center h-full min-h-[100px] border-2 border-dashed border-gray-300 hover:border-gray-400"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-          </svg>
-          <span class="text-gray-500 mt-2">Agregar Regalo</span>
-        </button>
-      `;
-
-      // Combinar todo
-      giftsList.innerHTML = giftsHTML + addButtonHTML;
-    } catch (error) {
-      console.error('Error:', error);
-      const giftsList = document.getElementById('giftsList');
-      if (giftsList) {
-        giftsList.innerHTML = '<p class="text-red-600 text-center col-span-full">Error al cargar los regalos. Por favor, intenta de nuevo.</p>';
-      }
-    }
-  }
-
-  // Eliminar regalo
-  window.deleteGift = async (giftId: string) => {
-    const userPhone = auth.currentUser?.phoneNumber;
+  // Cargar datos del usuario
+  const loadUserData = async () => {
     if (!userPhone) return;
-
-    if (!confirm('¿Estás seguro de que deseas eliminar este regalo?')) return;
-
+    
     try {
-      const response = await fetch(`${API_URL}/api/gifts/${userPhone}/${giftId}`, {
-        method: 'DELETE',
+      const response = await fetch(`${API_URL}/api/users/${userPhone}`);
+      if (!response.ok) throw new Error('Error al cargar información del usuario');
+      const userData = await response.json();
+      
+      // Actualizar ícono
+      document.dispatchEvent(new CustomEvent('updateIcon', {
+        detail: { iconId: userData.iconId }
+      }));
+
+      // Actualizar tema
+      document.dispatchEvent(new CustomEvent('updateTheme', {
+        detail: { themeId: userData.themeId }
+      }));
+    } catch (error) {
+      console.error('Error al cargar información del usuario:', error);
+    }
+  };
+
+  // Manejar la selección de ícono
+  document.addEventListener('iconSelected', async (e: any) => {
+    if (!userPhone) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userPhone}/icon`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          iconId: e.detail.iconId
+        }),
       });
 
-      if (!response.ok) {
-        throw new Error('Error al eliminar el regalo');
-      }
+      if (!response.ok) throw new Error('Error al actualizar el ícono');
+    } catch (error) {
+      console.error('Error al actualizar el ícono:', error);
+      alert('Error al actualizar el ícono. Por favor, intenta de nuevo.');
+    }
+  });
 
-      // Recargar la lista de regalos
-      loadGifts(userPhone);
+  // Manejar la selección de tema
+  document.addEventListener('themeSelected', async (e: any) => {
+    if (!userPhone) return;
+    
+    try {
+      const response = await fetch(`${API_URL}/api/users/${userPhone}/theme`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          themeId: e.detail.themeId
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al actualizar el tema');
+    } catch (error) {
+      console.error('Error al actualizar el tema:', error);
+      alert('Error al actualizar el tema. Por favor, intenta de nuevo.');
+    }
+  });
+
+  // Event Listeners
+  auth.onAuthStateChanged((user) => {
+    if (user && user.phoneNumber) {
+      userPhone = user.phoneNumber;
+      if (userPhoneElement) {
+        userPhoneElement.textContent = userPhone;
+      }
+      loadLinks();
+      loadUserData();
+    } else {
+      window.location.href = '/login';
+    }
+  });
+
+  copyLinkBtn?.addEventListener('click', async () => {
+    if (!userPhone) return;
+    
+    const link = `${window.location.origin}/${userPhone}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      if (linkText) {
+        linkText.textContent = '¡Enlace copiado!';
+        setTimeout(() => {
+          if (linkText) linkText.textContent = 'Copiar enlace';
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Error al copiar:', error);
+    }
+  });
+
+  addLinkForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!linkInput) return;
+
+    const url = linkInput.value.trim();
+    if (!url) {
+      showError('Por favor, ingresa un enlace válido');
+      return;
+    }
+
+    try {
+      new URL(url);
+      await addLink(url);
+    } catch {
+      showError('Por favor, ingresa un enlace válido');
+    }
+  });
+
+  // Función para mostrar errores
+  const showError = (message: string) => {
+    if (linkError) {
+      linkError.textContent = message;
+      linkError.classList.remove('hidden');
+    }
+  };
+
+  // Función para ocultar errores
+  const hideError = () => {
+    if (linkError) {
+      linkError.classList.add('hidden');
+    }
+  };
+
+  // Función para agregar un enlace
+  const addLink = async (url: string) => {
+    if (!userPhone) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/gifts`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: userPhone,
+          url: url,
+        }),
+      });
+
+      if (!response.ok) throw new Error('Error al agregar el enlace');
       
-      // Mostrar mensaje de éxito
-      alert('Regalo eliminado exitosamente');
+      // Limpiar el formulario y recargar la lista
+      if (linkInput) linkInput.value = '';
+      hideError();
+      await loadLinks();
     } catch (error) {
       console.error('Error:', error);
-      alert('Error al eliminar el regalo. Por favor, intenta de nuevo.');
+      showError('Error al agregar el enlace. Por favor, intenta de nuevo.');
+    }
+  };
+
+  // Función para cargar los enlaces
+  const loadLinks = async () => {
+    if (!userPhone) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${userPhone}`);
+      if (!response.ok) throw new Error('Error al cargar los enlaces');
+      const gifts = await response.json();
+
+      if (linksList && emptyState) {
+        if (gifts.length === 0) {
+          linksList.innerHTML = '';
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          linksList.innerHTML = gifts.map((gift: any) => {
+            const domain = new URL(gift.url).hostname.replace('www.', '');
+            return `
+              <div class="group bg-white rounded-xl shadow hover:shadow-lg transition-all transform hover:-translate-y-0.5">
+                <div class="p-4 flex items-center gap-4">
+                  <img 
+                    src="https://www.google.com/s2/favicons?domain=${domain}&sz=32"
+                    class="w-8 h-8"
+                    alt="${domain}"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate group-hover:text-primary-500 transition-colors">
+                      ${domain}
+                    </div>
+                    <div class="text-sm text-gray-500 truncate">
+                      ${gift.url}
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <a 
+                      href="${gift.url}" 
+                      target="_blank"
+                      class="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                      title="Abrir enlace"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </a>
+                    <button 
+                      onclick="deleteGift('${gift.id}')"
+                      class="p-2 text-gray-400 hover:text-red-500 transition-colors"
+                      title="Eliminar regalo"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      if (linksList) {
+        linksList.innerHTML = '<p class="text-red-600 text-center">Error al cargar la lista. Por favor, intenta de nuevo.</p>';
+      }
     }
   };
 </script>

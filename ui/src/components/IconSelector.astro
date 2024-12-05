@@ -1,0 +1,155 @@
+---
+import { profileIcons } from '../config/profileIcons';
+
+interface Props {
+  selectedIcon?: string;
+}
+
+const { selectedIcon = 'gift' } = Astro.props;
+---
+
+<div class="relative inline-block">
+  <div
+    class="w-24 h-24 bg-gradient-to-br from-primary-500 to-secondary-500 rounded-full flex items-center justify-center text-white"
+  >
+    <svg 
+      xmlns="http://www.w3.org/2000/svg" 
+      class="w-12 h-12" 
+      fill="none" 
+      viewBox="0 0 24 24" 
+      stroke="currentColor"
+      id="selectedIcon"
+    >
+      <path 
+        stroke-linecap="round" 
+        stroke-linejoin="round" 
+        stroke-width="2" 
+        d={profileIcons.find(icon => icon.id === selectedIcon)?.path || profileIcons[0].path}
+      />
+    </svg>
+  </div>
+  
+  <button
+    type="button"
+    id="iconSelectorBtn"
+    class="absolute bottom-1 right-1 w-8 h-8 bg-white rounded-full shadow-lg flex items-center justify-center text-gray-600 hover:text-primary-500 transition-colors"
+    title="Editar ícono de perfil"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+    </svg>
+  </button>
+
+  <!-- Modal de selección -->
+  <div
+    id="iconModal"
+    class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden"
+    style="margin: 0;"
+  >
+    <div class="bg-white rounded-2xl p-6 max-w-lg w-full mx-4" style="margin-top: 10vh;">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold text-gray-900">Elige un ícono</h3>
+        <button
+          type="button"
+          class="text-gray-400 hover:text-gray-500"
+          id="closeModal"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="grid grid-cols-3 sm:grid-cols-4 gap-4">
+        {profileIcons.map(icon => (
+          <button
+            type="button"
+            class="aspect-square bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-colors icon-option group"
+            data-icon-id={icon.id}
+            data-icon-path={icon.path}
+          >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              class="w-8 h-8 text-gray-600 group-hover:text-gray-800 transition-colors" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+            >
+              <path 
+                stroke-linecap="round" 
+                stroke-linejoin="round" 
+                stroke-width="2" 
+                d={icon.path}
+              />
+            </svg>
+          </button>
+        ))}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const iconSelectorBtn = document.getElementById('iconSelectorBtn');
+  const iconModal = document.getElementById('iconModal');
+  const closeModal = document.getElementById('closeModal');
+  const selectedIcon = document.getElementById('selectedIcon');
+  const iconOptions = document.querySelectorAll('.icon-option');
+
+  // Mostrar modal
+  iconSelectorBtn?.addEventListener('click', () => {
+    iconModal?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  });
+
+  // Cerrar modal
+  closeModal?.addEventListener('click', () => {
+    iconModal?.classList.add('hidden');
+    document.body.style.overflow = '';
+  });
+
+  // Cerrar modal al hacer clic fuera
+  iconModal?.addEventListener('click', (e) => {
+    if (e.target === iconModal) {
+      iconModal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  });
+
+  // Seleccionar ícono
+  iconOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      const iconId = option.getAttribute('data-icon-id');
+      const iconPath = option.getAttribute('data-icon-path');
+
+      if (selectedIcon && iconPath) {
+        const path = selectedIcon.querySelector('path');
+        if (path) {
+          path.setAttribute('d', iconPath);
+        }
+      }
+
+      // Disparar evento personalizado
+      const event = new CustomEvent('iconSelected', {
+        detail: { iconId }
+      });
+      document.dispatchEvent(event);
+
+      // Cerrar modal
+      iconModal?.classList.add('hidden');
+      document.body.style.overflow = '';
+    });
+  });
+
+  // Escuchar evento para actualizar el ícono
+  document.addEventListener('updateIcon', (e: any) => {
+    const iconId = e.detail.iconId;
+    const icon = profileIcons.find(icon => icon.id === iconId);
+    if (icon && selectedIcon) {
+      const path = selectedIcon.querySelector('path');
+      if (path) {
+        path.setAttribute('d', icon.path);
+      }
+    }
+  });
+</script> 

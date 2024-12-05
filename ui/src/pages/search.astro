@@ -1,150 +1,198 @@
 ---
 import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
 ---
 
-<Layout title="RegalApp - Buscar">
-  <div class="max-w-2xl mx-auto">
-    <h1 class="text-3xl font-bold mb-6">Buscar Lista de Regalos</h1>
-    
-    <div class="mb-8">
-      <form id="searchForm" class="flex flex-col gap-4">
-        <div>
-          <label for="phone" class="block mb-2">Número de teléfono</label>
-          <div class="flex gap-4">
-            <div class="flex-1">
+<Layout title="Buscar - LinkGift">
+  <div class="min-h-screen bg-gradient-to-br from-primary-500 to-secondary-500">
+    <div class="min-h-screen bg-white/95 backdrop-blur-sm flex flex-col items-center">
+      <Header />
+      
+      <div class="w-full max-w-md mx-auto px-4">
+        <!-- Buscador -->
+        <div class="text-center mb-8">
+          <h1 class="text-3xl font-bold text-gray-900 mb-4">Encuentra una lista</h1>
+          <p class="text-gray-600">Ingresa un número de teléfono para encontrar su lista de regalos</p>
+        </div>
+
+        <form id="searchForm" class="space-y-6">
+          <div class="relative">
+            <div class="iti-container-wrapper">
               <input
                 type="tel"
                 id="phone"
-                class="w-full p-3 border rounded-lg"
+                class="w-full px-4 py-4 text-lg border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all text-center"
+                placeholder="Ingresa un número de teléfono..."
                 required
               />
-              <div id="error-msg" class="hidden mt-1 text-red-600 text-sm"></div>
-              <div id="valid-msg" class="hidden mt-1 text-green-600 text-sm">✓ Número válido</div>
             </div>
-            <button
-              type="submit"
-              id="searchButton"
-              class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled
+            <div id="searchError" class="absolute left-0 right-0 top-full mt-2 text-sm text-red-500 text-center hidden"></div>
+          </div>
+
+          <button
+            type="submit"
+            class="w-full px-8 py-4 text-lg font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+          >
+            <span>Buscar Lista</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </button>
+        </form>
+
+        <!-- No Encontrado -->
+        <div id="notFoundContainer" class="mt-12 hidden">
+          <div class="text-center">
+            <div class="mb-6">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4M12 20V4" />
+              </svg>
+            </div>
+            <h2 class="text-2xl font-bold text-gray-900 mb-2">Lista no encontrada</h2>
+            <p class="text-gray-600 mb-8">
+              Este número aún no tiene una lista de regalos.<br/>
+              ¿Por qué no le invitas a crear una?
+            </p>
+            <a 
+              id="whatsappLink"
+              href="#"
+              target="_blank"
+              class="inline-flex items-center px-6 py-3 text-base font-medium rounded-xl text-white bg-green-500 hover:bg-green-600 transition-all shadow hover:shadow-md"
             >
-              Buscar
-            </button>
+              <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+              </svg>
+              Invitar por WhatsApp
+            </a>
           </div>
         </div>
-      </form>
+      </div>
     </div>
-
-    <div id="results" class="grid gap-4"></div>
   </div>
 </Layout>
 
-<!-- Importar CSS de intl-tel-input -->
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/css/intlTelInput.css">
-
 <script>
-  let iti: any;
-
-  // Cargar intl-tel-input desde CDN
-  const loadIntlTelInput = async () => {
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/intlTelInput.min.js';
-    document.head.appendChild(script);
-
-    return new Promise((resolve) => {
-      script.onload = () => resolve(window.intlTelInput);
-    });
-  };
-
-  // Inicializar el selector de teléfono internacional
-  const initializePhoneInput = async () => {
-    const intlTelInput = await loadIntlTelInput();
-    const input = document.querySelector("#phone");
-    const errorMsg = document.querySelector("#error-msg");
-    const validMsg = document.querySelector("#valid-msg");
-    const submitButton = document.querySelector("#searchButton") as HTMLButtonElement;
-
-    if (input && errorMsg && validMsg) {
-      iti = intlTelInput(input, {
-        initialCountry: "mx",
-        preferredCountries: ["mx", "us", "es"],
-        utilsScript: "https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/18.3.3/js/utils.js",
-        separateDialCode: true,
-      });
-
-      const updateValidationUI = () => {
-        if (input instanceof HTMLInputElement) {
-          if (input.value.trim()) {
-            if (iti.isValidNumber()) {
-              validMsg.classList.remove("hidden");
-              errorMsg.classList.add("hidden");
-              submitButton.disabled = false;
-            } else {
-              validMsg.classList.add("hidden");
-              errorMsg.classList.remove("hidden");
-              errorMsg.textContent = "Número inválido";
-              submitButton.disabled = true;
-            }
-          } else {
-            validMsg.classList.add("hidden");
-            errorMsg.classList.add("hidden");
-            submitButton.disabled = true;
-          }
-        }
-      };
-
-      input.addEventListener('input', updateValidationUI);
-      input.addEventListener('change', updateValidationUI);
-      input.addEventListener('countrychange', updateValidationUI);
-    }
-  };
-
-  // Inicializar cuando el DOM esté listo
-  window.onload = async () => {
-    await initializePhoneInput();
-  };
-
+  import intlTelInput from 'intl-tel-input';
+  import 'intl-tel-input/build/css/intlTelInput.css';
+  
   const API_URL = 'http://localhost:5001';
 
-  document.getElementById('searchForm')?.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const phoneNumber = iti.getNumber(); // Obtiene el número completo con código de país
-    
-    try {
-      const response = await fetch(`${API_URL}/api/gifts/${phoneNumber}`);
-      const gifts = await response.json();
-      
-      const resultsDiv = document.getElementById('results');
-      if (!resultsDiv) return;
+  // Inicializar el input de teléfono
+  const phoneInput = document.getElementById('phone');
+  if (phoneInput) {
+    const iti = intlTelInput(phoneInput, {
+      preferredCountries: ['mx'],
+      separateDialCode: true,
+      utilsScript: 'https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/js/utils.js',
+      customContainer: "w-full flex justify-center"
+    });
 
-      if (gifts.length === 0) {
-        resultsDiv.innerHTML = '<p class="text-center text-gray-500">No se encontraron regalos para este número</p>';
+    // Configurar el formulario de búsqueda
+    const searchForm = document.getElementById('searchForm');
+    const searchError = document.getElementById('searchError');
+    const notFoundContainer = document.getElementById('notFoundContainer');
+    const whatsappLink = document.getElementById('whatsappLink');
+
+    searchForm?.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      if (!iti.isValidNumber()) {
+        if (searchError) {
+          searchError.textContent = 'Por favor, ingresa un número válido';
+          searchError.classList.remove('hidden');
+        }
         return;
       }
 
-      resultsDiv.innerHTML = gifts.map((gift: any) => `
-        <div class="border rounded-lg p-4 shadow-sm">
-          <h3 class="text-xl font-semibold mb-2">${gift.name}</h3>
-          ${gift.description ? `<p class="text-gray-600 mb-2">${gift.description}</p>` : ''}
-          ${gift.url ? `<a href="${gift.url}" target="_blank" class="text-blue-600 hover:underline">Ver regalo</a>` : ''}
-        </div>
-      `).join('');
-    } catch (error) {
-      console.error('Error:', error);
-      const resultsDiv = document.getElementById('results');
-      if (resultsDiv) {
-        resultsDiv.innerHTML = '<p class="text-center text-red-600">Error al buscar los regalos. Por favor, intenta de nuevo.</p>';
+      const phone = iti.getNumber();
+      
+      try {
+        const response = await fetch(`${API_URL}/api/gifts/${phone}`);
+        if (!response.ok) throw new Error('Lista no encontrada');
+        const gifts = await response.json();
+        
+        // Si la lista existe y tiene regalos, redirigir a la página de la lista
+        if (gifts && gifts.length > 0) {
+          window.location.href = `/${phone}`;
+        } else {
+          // Si la lista no tiene regalos, mostrar mensaje de no encontrado
+          if (notFoundContainer) {
+            notFoundContainer.classList.remove('hidden');
+          }
+          if (whatsappLink) {
+            const message = encodeURIComponent('¡Hola! Vi que aún no tienes una lista de regalos en LinkGift. ¡Crea la tuya aquí! 🎁\n\nhttps://linkgift.app');
+            whatsappLink.href = `https://wa.me/${phone.replace('+', '')}?text=${message}`;
+          }
+        }
+
+        // Ocultar mensaje de error si existe
+        if (searchError) {
+          searchError.classList.add('hidden');
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        // Mostrar mensaje de no encontrado
+        if (notFoundContainer) {
+          notFoundContainer.classList.remove('hidden');
+        }
+        if (whatsappLink) {
+          const message = encodeURIComponent('¡Hola! Vi que aún no tienes una lista de regalos en LinkGift. ¡Crea la tuya aquí! 🎁\n\nhttps://linkgift.app');
+          whatsappLink.href = `https://wa.me/${phone.replace('+', '')}?text=${message}`;
+        }
+        if (searchError) {
+          searchError.classList.add('hidden');
+        }
       }
-    }
-  });
+    });
+  }
 </script>
 
 <style>
-  .hidden {
-    display: none;
-  }
-
-  /* Estilos para intl-tel-input */
+  /* Ajustes para el input de teléfono */
   .iti {
     width: 100%;
+  }
+
+  .iti__flag {
+    background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/img/flags.png");
+  }
+
+  @media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .iti__flag {
+      background-image: url("https://cdnjs.cloudflare.com/ajax/libs/intl-tel-input/17.0.8/img/flags@2x.png");
+    }
+  }
+
+  /* Centrar el control de teléfono */
+  .iti-container {
+    position: fixed;
+    left: 50% !important;
+    transform: translateX(-50%);
+    z-index: 50;
+  }
+
+  .iti-container-wrapper {
+    position: relative;
+  }
+
+  /* Ajustes adicionales para centrar */
+  .iti.iti--container {
+    position: fixed;
+    top: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .iti__selected-flag {
+    padding-left: 12px !important;
+  }
+
+  .iti__flag-container {
+    padding: 0 !important;
+  }
+
+  /* Ajustar el input para que el texto esté centrado */
+  input[type="tel"] {
+    padding-left: 80px !important;
+    text-align: center !important;
   }
 </style> 

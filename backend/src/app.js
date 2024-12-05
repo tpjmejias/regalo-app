@@ -2,6 +2,7 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const giftsRoutes = require('./routes/gifts');
+const usersRoutes = require('./routes/users');
 const cors = require('cors');
 
 const app = express();
@@ -23,6 +24,7 @@ app.get('/api-docs', swaggerUi.setup(swaggerSpec, {
 
 // Rutas
 app.use('/api/gifts', giftsRoutes);
+app.use('/api/users', usersRoutes);
 
 // Ruta de prueba para verificar que el servidor está funcionando
 app.get('/api/health', (req, res) => {

@@ -4,6 +4,105 @@ const { db } = require('../config/firebase');
 
 /**
  * @swagger
+ * /api/gifts/latest:
+ *   get:
+ *     tags: [Regalos]
+ *     summary: Obtener últimos 10 regalos
+ *     description: Obtiene los últimos 10 regalos agregados en la plataforma
+ *     responses:
+ *       200:
+ *         description: Lista de últimos regalos obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                   url:
+ *                     type: string
+ *                   createdAt:
+ *                     type: string
+ *                     format: date-time
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/latest', async (req, res) => {
+  try {
+    const giftsRef = db.collection('gifts');
+    const snapshot = await giftsRef
+      .orderBy('createdAt', 'desc')
+      .limit(10)
+      .get();
+    
+    const gifts = [];
+    snapshot.forEach(doc => {
+      gifts.push({ id: doc.id, ...doc.data() });
+    });
+    
+    res.json(gifts);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
+ * /api/gifts/popular:
+ *   get:
+ *     tags: [Regalos]
+ *     summary: Obtener regalos populares
+ *     description: Obtiene los regalos más populares basados en el dominio de la URL
+ *     responses:
+ *       200:
+ *         description: Lista de regalos populares obtenida exitosamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   domain:
+ *                     type: string
+ *                   count:
+ *                     type: number
+ *       500:
+ *         description: Error del servidor
+ */
+router.get('/popular', async (req, res) => {
+  try {
+    const giftsRef = db.collection('gifts');
+    const snapshot = await giftsRef.get();
+    
+    // Agrupar por dominio
+    const domainCounts = {};
+    snapshot.forEach(doc => {
+      const gift = doc.data();
+      try {
+        const domain = new URL(gift.url).hostname.replace('www.', '');
+        domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+      } catch (error) {
+        console.error('Error parsing URL:', gift.url);
+      }
+    });
+    
+    // Convertir a array y ordenar
+    const popular = Object.entries(domainCounts)
+      .map(([domain, count]) => ({ domain, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+    
+    res.json(popular);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * @swagger
  * /api/gifts/{phone}:
  *   get:
  *     tags: [Regalos]
