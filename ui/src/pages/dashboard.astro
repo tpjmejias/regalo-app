@@ -2,10 +2,13 @@
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import ProfileEditor from '../components/ProfileEditor.astro';
+import { colorThemes } from '../config/theme';
+
+const defaultTheme = colorThemes[0];
 ---
 
 <Layout title="Mi Lista - LinkGift">
-  <div class="min-h-screen bg-gradient-to-br from-primary-500 to-secondary-500">
+  <div id="pageBackground" class={`min-h-screen bg-gradient-to-br ${defaultTheme.gradient}`}>
     <div class="min-h-screen bg-white/95 backdrop-blur-sm">
       <Header />
       
@@ -48,6 +51,7 @@ import ProfileEditor from '../components/ProfileEditor.astro';
 
             <button
               type="submit"
+              id="addLinkButton"
               class="w-full px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r from-primary-500 to-secondary-500 hover:from-primary-600 hover:to-secondary-600 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
               <span>Agregar Regalo</span>
@@ -95,6 +99,31 @@ import ProfileEditor from '../components/ProfileEditor.astro';
   const linkError = document.getElementById('linkError');
   const linksList = document.getElementById('linksList');
   const emptyState = document.getElementById('emptyState');
+  const pageBackground = document.getElementById('pageBackground');
+  const addLinkButton = document.getElementById('addLinkButton');
+
+  // Función para actualizar el tema en toda la página
+  const updatePageTheme = (themeId: string) => {
+    const theme = colorThemes.find(t => t.id === themeId) || colorThemes[0];
+    if (pageBackground) {
+      pageBackground.className = `min-h-screen bg-gradient-to-br ${theme.gradient}`;
+    }
+    if (addLinkButton) {
+      addLinkButton.className = `w-full px-6 py-3 text-base font-medium rounded-xl text-white bg-gradient-to-r ${theme.gradient} hover:opacity-90 transition-all shadow hover:shadow-md transform hover:-translate-y-0.5 flex items-center justify-center gap-2`;
+    }
+  };
+
+  // Escuchar el evento de selección de tema
+  document.addEventListener('themeSelected', (e: any) => {
+    const themeId = e.detail.themeId;
+    updatePageTheme(themeId);
+  });
+
+  // Escuchar el evento de actualización de tema
+  document.addEventListener('updateTheme', (e: any) => {
+    const themeId = e.detail.themeId;
+    updatePageTheme(themeId);
+  });
 
   // Cargar datos del usuario
   const loadUserData = async () => {
@@ -138,28 +167,6 @@ import ProfileEditor from '../components/ProfileEditor.astro';
     } catch (error) {
       console.error('Error al actualizar el ícono:', error);
       alert('Error al actualizar el ícono. Por favor, intenta de nuevo.');
-    }
-  });
-
-  // Manejar la selección de tema
-  document.addEventListener('themeSelected', async (e: any) => {
-    if (!userPhone) return;
-    
-    try {
-      const response = await fetch(`${API_URL}/api/users/${userPhone}/theme`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          themeId: e.detail.themeId
-        }),
-      });
-
-      if (!response.ok) throw new Error('Error al actualizar el tema');
-    } catch (error) {
-      console.error('Error al actualizar el tema:', error);
-      alert('Error al actualizar el tema. Por favor, intenta de nuevo.');
     }
   });
 

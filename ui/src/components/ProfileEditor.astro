@@ -248,16 +248,49 @@ const { selectedIcon = 'gift', selectedTheme = 'pink-violet' } = Astro.props;
   // Guardar cambios
   saveChangesBtn?.addEventListener('click', () => {
     if (currentIconId) {
+      // Actualizar el ícono en el componente principal
+      const iconPath = document.querySelector(`[data-icon-id="${currentIconId}"]`)?.getAttribute('data-icon-path');
+      if (iconPath && selectedIcon) {
+        const mainIconPath = selectedIcon.querySelector('path');
+        if (mainIconPath) {
+          mainIconPath.setAttribute('d', iconPath);
+        }
+      }
       document.dispatchEvent(new CustomEvent('iconSelected', {
         detail: { iconId: currentIconId }
       }));
     }
     if (currentThemeId) {
+      // Actualizar el tema en el componente principal
+      const themeGradient = document.querySelector(`[data-theme-id="${currentThemeId}"]`)?.getAttribute('data-theme-gradient');
+      if (themeGradient && profileIcon) {
+        profileIcon.className = `w-24 h-24 bg-gradient-to-br ${themeGradient} rounded-full flex items-center justify-center text-white`;
+      }
       document.dispatchEvent(new CustomEvent('themeSelected', {
         detail: { themeId: currentThemeId }
       }));
     }
     hasChanges = false;
     closeModal();
+  });
+
+  // Escuchar eventos de actualización
+  document.addEventListener('updateIcon', (e: CustomEvent) => {
+    const iconId = e.detail.iconId;
+    const iconPath = document.querySelector(`[data-icon-id="${iconId}"]`)?.getAttribute('data-icon-path');
+    if (iconPath && selectedIcon) {
+      const mainIconPath = selectedIcon.querySelector('path');
+      if (mainIconPath) {
+        mainIconPath.setAttribute('d', iconPath);
+      }
+    }
+  });
+
+  document.addEventListener('updateTheme', (e: CustomEvent) => {
+    const themeId = e.detail.themeId;
+    const themeGradient = document.querySelector(`[data-theme-id="${themeId}"]`)?.getAttribute('data-theme-gradient');
+    if (themeGradient && profileIcon) {
+      profileIcon.className = `w-24 h-24 bg-gradient-to-br ${themeGradient} rounded-full flex items-center justify-center text-white`;
+    }
   });
 </script> 
