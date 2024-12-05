@@ -224,7 +224,13 @@ const defaultTheme = colorThemes[0];
 
       try {
         hideError(codeError);
-        await confirmationResult.confirm(code);
+        const result = await confirmationResult.confirm(code);
+        // Guardar información de autenticación
+        localStorage.setItem('linkgift:auth', JSON.stringify({
+          phoneNumber: result.user.phoneNumber,
+          uid: result.user.uid,
+          isAuthenticated: true
+        }));
         window.location.href = '/dashboard';
       } catch (error) {
         console.error('Error:', error);
@@ -252,6 +258,15 @@ const defaultTheme = colorThemes[0];
       const input = e.target as HTMLInputElement;
       input.value = input.value.replace(/\D/g, '').substring(0, 6);
     });
+
+    // Verificar si ya está autenticado
+    const authData = localStorage.getItem('linkgift:auth');
+    if (authData) {
+      const auth = JSON.parse(authData);
+      if (auth.isAuthenticated) {
+        window.location.href = '/dashboard';
+      }
+    }
   }
 </script>
 
