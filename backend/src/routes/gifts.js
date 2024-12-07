@@ -8,7 +8,7 @@ const { db } = require('../config/firebase');
  *   get:
  *     tags: [Regalos]
  *     summary: Obtener últimos 10 regalos
- *     description: Obtiene los últimos 10 regalos agregados en la plataforma
+ *     description: Obtiene los últimos 10 regalos agregados en la plataforma, ordenados por fecha de creación
  *     responses:
  *       200:
  *         description: Lista de últimos regalos obtenida exitosamente
@@ -21,28 +21,48 @@ const { db } = require('../config/firebase');
  *                 properties:
  *                   id:
  *                     type: string
+ *                     description: ID único del regalo
+ *                   userId:
+ *                     type: string
+ *                     description: Número de teléfono del usuario (sin formato)
  *                   url:
  *                     type: string
+ *                     description: URL principal del regalo
+ *                   url_2:
+ *                     type: string
+ *                     description: URL alternativa del regalo
  *                   createdAt:
  *                     type: string
  *                     format: date-time
+ *                     description: Fecha de creación del regalo
  *       500:
  *         description: Error del servidor
  */
 router.get('/latest', async (req, res) => {
   try {
-    const giftsRef = db.collection('gifts');
-    const snapshot = await giftsRef
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-      .get();
-    
     const gifts = [];
-    snapshot.forEach(doc => {
-      gifts.push({ id: doc.id, ...doc.data() });
-    });
+    const usersRef = db.collection('users');
+    const usersSnapshot = await usersRef.get();
+
+    for (const userDoc of usersSnapshot.docs) {
+      const giftsSnapshot = await userDoc.ref
+        .collection('gifts')
+        .orderBy('createdAt', 'desc')
+        .limit(10)
+        .get();
+
+      giftsSnapshot.forEach(doc => {
+        gifts.push({ 
+          id: doc.id, 
+          userId: userDoc.id,
+          ...doc.data() 
+        });
+      });
+    }
     
-    res.json(gifts);
+    // Ordenar todos los regalos por fecha y tomar los últimos 10
+    gifts.sort((a, b) => b.createdAt - a.createdAt);
+    res.json(gifts.slice(0, 10));
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -74,22 +94,24 @@ router.get('/latest', async (req, res) => {
  */
 router.get('/popular', async (req, res) => {
   try {
-    const giftsRef = db.collection('gifts');
-    const snapshot = await giftsRef.get();
-    
-    // Agrupar por dominio
     const domainCounts = {};
-    snapshot.forEach(doc => {
-      const gift = doc.data();
-      try {
-        const domain = new URL(gift.url).hostname.replace('www.', '');
-        domainCounts[domain] = (domainCounts[domain] || 0) + 1;
-      } catch (error) {
-        console.error('Error parsing URL:', gift.url);
-      }
-    });
+    const usersRef = db.collection('users');
+    const usersSnapshot = await usersRef.get();
+
+    for (const userDoc of usersSnapshot.docs) {
+      const giftsSnapshot = await userDoc.ref.collection('gifts').get();
+      
+      giftsSnapshot.forEach(doc => {
+        const gift = doc.data();
+        try {
+          const domain = new URL(gift.url).hostname.replace('www.', '');
+          domainCounts[domain] = (domainCounts[domain] || 0) + 1;
+        } catch (error) {
+          console.error('Error parsing URL:', gift.url);
+        }
+      });
+    }
     
-    // Convertir a array y ordenar
     const popular = Object.entries(domainCounts)
       .map(([domain, count]) => ({ domain, count }))
       .sort((a, b) => b.count - a.count)
@@ -106,8 +128,8 @@ router.get('/popular', async (req, res) => {
  * /api/gifts/{phone}:
  *   get:
  *     tags: [Regalos]
- *     summary: Obtener lista de regalos
- *     description: Obtiene todos los regalos asociados a un número de teléfono
+ *     summary: Obtener lista de regalos de un usuario
+ *     description: Obtiene todos los regalos asociados a un número de teléfono, ordenados por fecha de creación
  *     parameters:
  *       - in: path
  *         name: phone
@@ -128,13 +150,17 @@ router.get('/popular', async (req, res) => {
  *                 properties:
  *                   id:
  *                     type: string
- *                   userId:
- *                     type: string
+ *                     description: ID único del regalo
  *                   url:
  *                     type: string
+ *                     description: URL principal del regalo
+ *                   url_2:
+ *                     type: string
+ *                     description: URL alternativa del regalo
  *                   createdAt:
  *                     type: string
  *                     format: date-time
+ *                     description: Fecha de creación del regalo
  *       500:
  *         description: Error del servidor
  */
@@ -143,8 +169,8 @@ router.get('/:phone', async (req, res) => {
     const { phone } = req.params;
     const userId = phone.replace(/\D/g, '');
     
-    const giftsRef = db.collection('gifts');
-    const snapshot = await giftsRef.where('userId', '==', userId).get();
+    const giftsRef = db.collection('users').doc(userId).collection('gifts');
+    const snapshot = await giftsRef.orderBy('createdAt', 'desc').get();
     
     const gifts = [];
     snapshot.forEach(doc => {
@@ -163,7 +189,7 @@ router.get('/:phone', async (req, res) => {
  *   post:
  *     tags: [Regalos]
  *     summary: Crear nuevo regalo
- *     description: Crea un nuevo regalo asociado a un número de teléfono
+ *     description: Crea un nuevo regalo en la lista de regalos del usuario
  *     requestBody:
  *       required: true
  *       content:
@@ -176,10 +202,17 @@ router.get('/:phone', async (req, res) => {
  *             properties:
  *               phone:
  *                 type: string
+ *                 description: Número de teléfono del usuario
  *                 example: "+525512345678"
  *               url:
  *                 type: string
+ *                 description: URL principal del regalo
  *                 example: "https://www.amazon.com/product"
+ *               url_2:
+ *                 type: string
+ *                 description: URL alternativa del regalo
+ *                 example: "https://www.mercadolibre.com/product"
+ *                 required: false
  *     responses:
  *       201:
  *         description: Regalo creado exitosamente
@@ -190,13 +223,17 @@ router.get('/:phone', async (req, res) => {
  *               properties:
  *                 id:
  *                   type: string
- *                 userId:
- *                   type: string
+ *                   description: ID único del regalo
  *                 url:
  *                   type: string
+ *                   description: URL principal del regalo
+ *                 url_2:
+ *                   type: string
+ *                   description: URL alternativa del regalo
  *                 createdAt:
  *                   type: string
  *                   format: date-time
+ *                   description: Fecha de creación del regalo
  *       400:
  *         description: Datos inválidos
  *       500:
@@ -204,7 +241,7 @@ router.get('/:phone', async (req, res) => {
  */
 router.post('/', async (req, res) => {
   try {
-    const { phone, url } = req.body;
+    const { phone, url, url_2 } = req.body;
     
     if (!phone || !url) {
       return res.status(400).json({ error: 'Teléfono y URL son requeridos' });
@@ -213,12 +250,15 @@ router.post('/', async (req, res) => {
     const userId = phone.replace(/\D/g, '');
     
     const gift = {
-      userId,
       url,
+      url_2: url_2 || null,
       createdAt: new Date()
     };
     
-    const docRef = await db.collection('gifts').add(gift);
+    const userRef = db.collection('users').doc(userId);
+    const giftsRef = userRef.collection('gifts');
+    const docRef = await giftsRef.add(gift);
+    
     res.status(201).json({ id: docRef.id, ...gift });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -259,10 +299,14 @@ router.delete('/:phone/:giftId', async (req, res) => {
     const { phone, giftId } = req.params;
     const userId = phone.replace(/\D/g, '');
     
-    const giftRef = db.collection('gifts').doc(giftId);
+    const giftRef = db.collection('users')
+      .doc(userId)
+      .collection('gifts')
+      .doc(giftId);
+    
     const gift = await giftRef.get();
     
-    if (!gift.exists || gift.data().userId !== userId) {
+    if (!gift.exists) {
       return res.status(404).json({ error: 'Regalo no encontrado' });
     }
     
