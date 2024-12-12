@@ -1,19 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
-import { profileIcons } from '../config/profileIcons';
+import { icons } from '../config/icons';
 import { colorThemes } from '../config/theme';
 
 const { phone } = Astro.params;
 
 // Obtener la información del usuario desde el backend
-let userIconId = 'gift';
+let userIconId = 'default';
 let userThemeId = 'pink-violet';
 try {
   const response = await fetch(`http://localhost:5001/api/users/${phone}`);
   if (response.ok) {
     const userData = await response.json();
-    userIconId = userData.iconId || 'gift';
+    userIconId = userData.iconId || 'default';
     userThemeId = userData.themeId || 'pink-violet';
   }
 } catch (error) {
@@ -21,6 +21,7 @@ try {
 }
 
 const theme = colorThemes.find(t => t.id === userThemeId) || colorThemes[0];
+const icon = icons.find(i => i.id === userIconId) || icons[0];
 ---
 
 <Layout title={`Lista de ${phone} - LinkGift`}>
@@ -32,20 +33,7 @@ const theme = colorThemes.find(t => t.id === userThemeId) || colorThemes[0];
         <!-- Profile Header -->
         <div class="text-center mb-8">
           <div class={`w-24 h-24 bg-gradient-to-br ${theme.gradient} rounded-full mx-auto flex items-center justify-center text-white mb-4`}>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              class="w-12 h-12" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-            >
-              <path 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                stroke-width="2" 
-                d={profileIcons.find(icon => icon.id === userIconId)?.path || profileIcons[0].path}
-              />
-            </svg>
+            <span class="text-4xl">{icon.emoji}</span>
           </div>
           <p class="text-lg font-medium text-gray-900 mb-2">{phone}</p>
           <h1 class="text-2xl font-bold text-gray-900 mb-8">Lista de Regalos</h1>
@@ -158,20 +146,29 @@ const theme = colorThemes.find(t => t.id === userThemeId) || colorThemes[0];
 
   // Escuchar el evento de selección de ícono
   document.addEventListener('iconSelected', async (e: any) => {
-    const iconId = e.detail.iconId;
+    if (!phone) return;
+    
     try {
-      // Aquí deberíamos hacer una llamada a la API para actualizar el ícono
       const response = await fetch(`${API_URL}/api/users/${phone}/icon`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ iconId }),
+        body: JSON.stringify({
+          iconId: e.detail.iconId
+        }),
       });
 
-      if (!response.ok) throw new Error('Error al actualizar el ícono');
+      if (!response.ok) {
+        throw new Error('Error al actualizar el ícono');
+      }
+
+      // Actualizar icono en la UI
+      document.dispatchEvent(new CustomEvent('updateIcon', {
+        detail: { iconId: e.detail.iconId }
+      }));
     } catch (error) {
-      console.error('Error:', error);
+      console.error('Error al actualizar el ícono:', error);
       alert('Error al actualizar el ícono. Por favor, intenta de nuevo.');
     }
   });
@@ -273,5 +270,49 @@ const theme = colorThemes.find(t => t.id === userThemeId) || colorThemes[0];
   };
 
   // Cargar datos cuando la página esté lista
-  document.addEventListener('DOMContentLoaded', loadGifts);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadGifts();
+
+    // Registrar el listener del tema aquí
+    document.addEventListener('themeSelected', async (e: any) => {
+      console.log('Theme event received:', e.detail);
+      if (!phone) return;
+      
+      try {
+        // Hacer la petición al backend
+        const response = await fetch(`${API_URL}/api/users/${phone}/theme`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            themeId: e.detail.themeId
+          }),
+        });
+
+        console.log('Backend response:', response.status); // Debug log
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          console.error('Backend error:', errorData);
+          throw new Error('Error al actualizar el tema');
+        }
+
+        // Si la actualización fue exitosa, actualizar la UI
+        const pageBackground = document.getElementById('pageBackground');
+        if (pageBackground && e.detail.themeGradient) {
+          pageBackground.className = `min-h-screen bg-gradient-to-br ${e.detail.themeGradient}`;
+        }
+
+        // Actualizar el icono del perfil
+        document.dispatchEvent(new CustomEvent('updateTheme', {
+          detail: e.detail
+        }));
+
+      } catch (error) {
+        console.error('Error al actualizar el tema:', error);
+        alert('Error al actualizar el tema. Por favor, intenta de nuevo.');
+      }
+    });
+  });
 </script> 

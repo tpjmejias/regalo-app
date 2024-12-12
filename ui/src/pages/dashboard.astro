@@ -3,6 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Header from '../components/Header.astro';
 import ProfileEditor from '../components/ProfileEditor.astro';
 import { colorThemes } from '../config/theme';
+import { icons } from '../config/icons';
 
 const defaultTheme = colorThemes[0];
 ---
@@ -15,8 +16,20 @@ const defaultTheme = colorThemes[0];
       <div class="max-w-xl mx-auto px-4">
         <!-- Profile Section -->
         <div class="text-center mb-12">
-          <div class="mb-4">
-            <ProfileEditor />
+          <div class="mb-4 flex justify-center gap-2">
+            <div class="relative">
+              <ProfileEditor />
+            </div>
+            
+            <button
+              id="themeButton"
+              class="w-12 h-12 flex items-center justify-center rounded-full bg-white/80 hover:bg-white shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 text-gray-600 hover:text-gray-800"
+              title="Cambiar tema"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+            </button>
           </div>
           <p class="text-lg font-medium text-gray-900 mb-2">
             <span id="userPhone"></span>
@@ -147,6 +160,28 @@ const defaultTheme = colorThemes[0];
   </div>
 </Layout>
 
+<!-- Agregar el panel de temas -->
+<div id="themePanel" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+  <div class="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+    <div class="flex justify-between items-center mb-4">
+      <h3 class="text-xl font-bold">Seleccionar tema</h3>
+      <button id="closeThemePanel" class="text-gray-500 hover:text-gray-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+    <div class="grid grid-cols-3 gap-4">
+      {colorThemes.map((theme) => (
+        <button
+          class={`w-full aspect-square rounded-lg transition-all transform hover:-translate-y-1 hover:shadow-lg bg-gradient-to-br ${theme.gradient}`}
+          data-theme-id={theme.id}
+        ></button>
+      ))}
+    </div>
+  </div>
+</div>
+
 <script>
   import { auth } from '../config/firebase';
   import { colorThemes } from '../config/theme';
@@ -199,14 +234,16 @@ const defaultTheme = colorThemes[0];
       const userData = await response.json();
       
       // Actualizar ícono
-      document.dispatchEvent(new CustomEvent('updateIcon', {
-        detail: { iconId: userData.iconId }
-      }));
+      if (userData.iconId) {
+        document.dispatchEvent(new CustomEvent('updateIcon', {
+          detail: { iconId: userData.iconId }
+        }));
+      }
 
       // Actualizar tema
-      document.dispatchEvent(new CustomEvent('updateTheme', {
-        detail: { themeId: userData.themeId }
-      }));
+      if (userData.themeId) {
+        updatePageTheme(userData.themeId);
+      }
     } catch (error) {
       console.error('Error al cargar información del usuario:', error);
     }
@@ -241,8 +278,8 @@ const defaultTheme = colorThemes[0];
       if (userPhoneElement) {
         userPhoneElement.textContent = userPhone;
       }
-      loadLinks();
       loadUserData();
+      loadLinks();
     } else {
       window.location.href = '/login';
     }
@@ -309,7 +346,7 @@ const defaultTheme = colorThemes[0];
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userPhone,
+          phone: userPhone,
           url: url,
         }),
       });
@@ -371,7 +408,7 @@ const defaultTheme = colorThemes[0];
                       </svg>
                     </a>
                     <button 
-                      onclick="deleteGift('${gift.id}')"
+                      onclick="window.deleteGift('${gift.id}')"
                       class="p-2 text-gray-400 hover:text-red-500 transition-colors"
                       title="Eliminar regalo"
                     >
@@ -471,6 +508,107 @@ const defaultTheme = colorThemes[0];
       console.error('Error al copiar:', err);
     }
   });
+
+  // Agregar esta función antes del loadLinks
+  const deleteGift = async (giftId: string) => {
+    if (!userPhone) return;
+    
+    if (!confirm('¿Estás seguro de que quieres eliminar este regalo?')) return;
+
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/${userPhone}/${giftId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Error al eliminar el regalo');
+      
+      // Recargar la lista
+      await loadLinks();
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error al eliminar el regalo. Por favor, intenta de nuevo.');
+    }
+  };
+
+  // Y modificar la parte del botón de eliminar en el template de loadLinks
+  // Cambiar esta línea:
+  onclick="deleteGift('${gift.id}')"
+
+  // Por esta:
+  onclick="window.deleteGift('${gift.id}')"
+
+  // Y agregar al inicio del script:
+  declare global {
+    interface Window {
+      deleteGift: (giftId: string) => Promise<void>;
+    }
+  }
+
+  // Y antes de los event listeners agregar:
+  window.deleteGift = deleteGift;
+
+  // Agregar manejo del panel de temas
+  const themeButton = document.getElementById('themeButton');
+  const themePanel = document.getElementById('themePanel');
+  const closeThemePanel = document.getElementById('closeThemePanel');
+
+  themeButton?.addEventListener('click', () => {
+    themePanel?.classList.remove('hidden');
+  });
+
+  closeThemePanel?.addEventListener('click', () => {
+    themePanel?.classList.add('hidden');
+  });
+
+  // Cerrar al hacer clic fuera del panel
+  themePanel?.addEventListener('click', (e) => {
+    if (e.target === themePanel) {
+      themePanel.classList.add('hidden');
+    }
+  });
+
+  // Manejar la selección de tema
+  themePanel?.querySelectorAll('button[data-theme-id]').forEach(button => {
+    button.addEventListener('click', async () => {
+      const themeId = button.getAttribute('data-theme-id');
+      if (!themeId || !userPhone) return;
+
+      try {
+        const response = await fetch(`${API_URL}/api/users/${userPhone}/theme`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            themeId: themeId
+          }),
+        });
+
+        if (!response.ok) throw new Error('Error al actualizar el tema');
+        
+        // Actualizar tema en la UI
+        document.dispatchEvent(new CustomEvent('updateTheme', {
+          detail: { themeId }
+        }));
+        
+        // Cerrar el panel
+        themePanel.classList.add('hidden');
+      } catch (error) {
+        console.error('Error al actualizar el tema:', error);
+        alert('Error al actualizar el tema. Por favor, intenta de nuevo.');
+      }
+    });
+  });
+
+  // Definir los tipos de eventos personalizados
+  declare global {
+    interface WindowEventMap {
+      'themeSelected': CustomEvent<{ themeId: string }>;
+      'iconSelected': CustomEvent<{ iconId: string }>;
+      'updateTheme': CustomEvent<{ themeId: string }>;
+      'updateIcon': CustomEvent<{ iconId: string }>;
+    }
+  }
 </script>
 
 <style>

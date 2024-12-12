@@ -133,6 +133,18 @@ const features = [
         </div>
       </div>
 
+      <!-- Regalos más populares -->
+      <div class="max-w-4xl mx-auto px-4 pb-20">
+        <h2 class="text-2xl font-bold text-center text-gray-900 mb-8">Regalos más populares</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="popularGifts">
+          <div class="animate-pulse space-y-4">
+            <div class="h-14 bg-white rounded-lg shadow"></div>
+            <div class="h-14 bg-white rounded-lg shadow"></div>
+            <div class="h-14 bg-white rounded-lg shadow"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Footer -->
       <footer class="max-w-4xl mx-auto px-4 py-8 text-center text-gray-600 border-t">
         <p>&copy; {new Date().getFullYear()} LinkGift. Todos los derechos reservados.</p>
@@ -150,45 +162,56 @@ const features = [
     localStorage.setItem('linkgift:theme', currentTheme);
   }
 
+  // Función para formatear el número de teléfono
+  const formatPhone = (phone: string) => {
+    const cleaned = phone.replace(/\D/g, '');
+    const match = cleaned.match(/^(\d{2})(\d{2})(\d{4})(\d{4})$/);
+    if (match) {
+      return `+${match[1]} ${match[2]} ${match[3]}-${match[4]}`;
+    }
+    return phone;
+  };
+
   // Cargar últimas listas
   async function loadLatestLists() {
     try {
-      const response = await fetch(`${API_URL}/api/gifts/latest`);
-      if (!response.ok) throw new Error('Error al cargar las listas');
-      const gifts = await response.json();
+      const response = await fetch(`${API_URL}/api/users/latest`);
+      if (!response.ok) throw new Error('Error al cargar usuarios recientes');
+      const users = await response.json();
       
       const container = document.getElementById('latestLists');
       if (!container) return;
 
-      // Agrupar por teléfono
-      const listsByPhone = gifts.reduce((acc: any, gift: any) => {
-        if (!acc[gift.userId]) {
-          acc[gift.userId] = [];
-        }
-        acc[gift.userId].push(gift);
-        return acc;
-      }, {});
+      if (users.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center col-span-full">No hay usuarios aún</p>';
+        return;
+      }
 
-      // Mostrar las últimas 6 listas
-      const lists = Object.entries(listsByPhone).slice(0, 6);
-      
-      container.innerHTML = lists.map(([phone, gifts]: [string, any[]]) => {
-        const giftCount = gifts.length;
+      container.innerHTML = users.map(user => {
+        const formattedPhone = formatPhone(user.phone);
+        const timeAgo = getTimeAgo(new Date(user.createdAt));
+        
         return `
           <a 
-            href="/${phone}" 
+            href="/${user.phone}" 
             class="block bg-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden group"
           >
             <div class="p-4">
-              <div class="flex items-center justify-between mb-1">
-                <h3 class="font-medium text-gray-900 group-hover:text-primary-500 transition-colors">
-                  Lista de ${phone}
-                </h3>
-                <span class="text-sm text-gray-500">${giftCount} regalo${giftCount !== 1 ? 's' : ''}</span>
+              <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-${user.themeId.split('-')[0]}-500 to-${user.themeId.split('-')[1]}-500 rounded-full flex items-center justify-center text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${getIconPath(user.iconId)}" />
+                  </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <h3 class="font-medium text-gray-900 group-hover:text-primary-500 transition-colors">
+                    ${formattedPhone}
+                  </h3>
+                  <p class="text-sm text-gray-500">
+                    Se unió hace ${timeAgo}
+                  </p>
+                </div>
               </div>
-              <p class="text-sm text-gray-500">
-                Última actualización: ${new Date(gifts[0].createdAt).toLocaleDateString()}
-              </p>
             </div>
           </a>
         `;
@@ -197,11 +220,95 @@ const features = [
       console.error('Error:', error);
       const container = document.getElementById('latestLists');
       if (container) {
-        container.innerHTML = '<p class="text-red-600 text-center col-span-full">Error al cargar las listas recientes</p>';
+        container.innerHTML = '<p class="text-red-600 text-center col-span-full">Error al cargar usuarios recientes</p>';
+      }
+    }
+  }
+
+  // Función auxiliar para mostrar tiempo relativo
+  function getTimeAgo(date: Date) {
+    const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + ' años';
+    
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + ' meses';
+    
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + ' días';
+    
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + ' horas';
+    
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + ' minutos';
+    
+    return Math.floor(seconds) + ' segundos';
+  }
+
+  // Cargar regalos populares
+  async function loadPopularGifts() {
+    try {
+      const response = await fetch(`${API_URL}/api/gifts/popular`);
+      if (!response.ok) throw new Error('Error al cargar los regalos populares');
+      const gifts = await response.json();
+      
+      const container = document.getElementById('popularGifts');
+      if (!container) return;
+
+      if (gifts.length === 0) {
+        container.innerHTML = '<p class="text-gray-500 text-center col-span-full">No hay regalos populares aún</p>';
+        return;
+      }
+
+      container.innerHTML = gifts.map(gift => {
+        try {
+          const domain = new URL(gift.url).hostname.replace('www.', '');
+          return `
+            <a 
+              href="${gift.url}" 
+              target="_blank"
+              rel="noopener noreferrer"
+              class="block bg-white rounded-xl shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 overflow-hidden group"
+            >
+              <div class="p-4">
+                <div class="flex items-center gap-4">
+                  <img 
+                    src="https://www.google.com/s2/favicons?domain=${domain}&sz=32"
+                    class="w-8 h-8"
+                    alt="${domain}"
+                    onerror="this.src='https://www.google.com/s2/favicons?domain=${domain}'"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-900 truncate group-hover:text-primary-500 transition-colors">
+                      ${domain}
+                    </div>
+                    <div class="text-sm text-gray-500">
+                      ${gift.count} ${gift.count === 1 ? 'persona lo agregó' : 'personas lo agregaron'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </a>
+          `;
+        } catch (error) {
+          console.error('Error processing gift:', gift, error);
+          return '';
+        }
+      }).filter(Boolean).join('');
+    } catch (error) {
+      console.error('Error:', error);
+      const container = document.getElementById('popularGifts');
+      if (container) {
+        container.innerHTML = '<p class="text-red-600 text-center col-span-full">Error al cargar los regalos populares</p>';
       }
     }
   }
 
   // Cargar datos cuando la página esté lista
-  document.addEventListener('DOMContentLoaded', loadLatestLists);
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLatestLists();
+    loadPopularGifts();
+  });
 </script>

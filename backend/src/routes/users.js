@@ -1,9 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const admin = require('firebase-admin');
-
-// Referencia a la colección de usuarios
-const usersRef = admin.firestore().collection('users');
+const { db } = require('../config/firebase');
+const { cleanPhoneNumber } = require('../utils/phoneUtils');
 
 /**
  * @swagger
@@ -42,17 +40,21 @@ const usersRef = admin.firestore().collection('users');
  */
 router.put('/:phone/icon', async (req, res) => {
   try {
-    const { phone } = req.params;
+    const cleanedPhone = cleanPhoneNumber(req.params.phone);
     const { iconId } = req.body;
+
+    if (!cleanedPhone) {
+      return res.status(400).json({ error: 'Número de teléfono inválido' });
+    }
 
     if (!iconId) {
       return res.status(400).json({ error: 'Se requiere el ID del ícono' });
     }
 
     // Actualizar o crear el documento del usuario
-    await usersRef.doc(phone).set({
+    await db.collection('users').doc(cleanedPhone).set({
       iconId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: new Date()
     }, { merge: true });
     
     res.json({ message: 'Ícono actualizado exitosamente' });
@@ -99,19 +101,27 @@ router.put('/:phone/icon', async (req, res) => {
  */
 router.put('/:phone/theme', async (req, res) => {
   try {
-    const { phone } = req.params;
+    const cleanedPhone = cleanPhoneNumber(req.params.phone);
     const { themeId } = req.body;
+
+    console.log('Updating theme for:', { cleanedPhone, themeId }); // Debug log
+
+    if (!cleanedPhone) {
+      return res.status(400).json({ error: 'Número de teléfono inválido' });
+    }
 
     if (!themeId) {
       return res.status(400).json({ error: 'Se requiere el ID del tema' });
     }
 
     // Actualizar o crear el documento del usuario
-    await usersRef.doc(phone).set({
+    const userRef = db.collection('users').doc(cleanedPhone);
+    await userRef.set({
       themeId,
-      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      updatedAt: new Date()
     }, { merge: true });
     
+    console.log('Theme updated successfully'); // Debug log
     res.json({ message: 'Tema actualizado exitosamente' });
   } catch (error) {
     console.error('Error al actualizar el tema:', error);
@@ -153,28 +163,17 @@ router.put('/:phone/theme', async (req, res) => {
  */
 router.get('/:phone', async (req, res) => {
   try {
-    const { phone } = req.params;
+    const cleanedPhone = cleanPhoneNumber(req.params.phone);
+    const userRef = db.collection('users').doc(cleanedPhone);
+    const doc = await userRef.get();
 
-    // Obtener el documento del usuario
-    const userDoc = await usersRef.doc(phone).get();
-    
-    if (!userDoc.exists) {
-      return res.json({
-        phone,
-        iconId: 'gift', // Valor por defecto
-        themeId: 'pink-violet' // Valor por defecto
-      });
+    if (!doc.exists) {
+      return res.status(404).json({ error: 'Usuario no encontrado' });
     }
 
-    const userData = userDoc.data();
-    res.json({
-      phone,
-      iconId: userData.iconId || 'gift',
-      themeId: userData.themeId || 'pink-violet'
-    });
+    res.json({ phone: cleanedPhone, ...doc.data() });
   } catch (error) {
-    console.error('Error al obtener información del usuario:', error);
-    res.status(500).json({ error: 'Error al obtener información del usuario' });
+    res.status(500).json({ error: error.message });
   }
 });
 

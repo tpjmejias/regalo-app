@@ -50,6 +50,7 @@ const { selectedTheme = 'pink-violet' } = Astro.props;
             type="button"
             class="p-4 rounded-xl hover:bg-gray-50 transition-colors theme-option group flex items-center gap-4"
             data-theme-id={theme.id}
+            data-theme-gradient={theme.gradient}
           >
             <div class={`w-16 h-8 rounded-full bg-gradient-to-r ${theme.gradient}`}></div>
             <span class="text-gray-700 group-hover:text-gray-900 font-medium">{theme.name}</span>
@@ -90,14 +91,11 @@ const { selectedTheme = 'pink-violet' } = Astro.props;
   themeOptions.forEach(option => {
     option.addEventListener('click', () => {
       const themeId = option.getAttribute('data-theme-id');
+      const themeGradient = option.getAttribute('data-theme-gradient');
+      
+      if (!themeId || !themeGradient) return;
 
-      // Disparar evento personalizado
-      const event = new CustomEvent('themeSelected', {
-        detail: { themeId }
-      });
-      document.dispatchEvent(event);
-
-      // Cerrar modal
+      // Solo cerrar el modal
       themeModal?.classList.add('hidden');
       document.body.style.overflow = '';
     });

@@ -1,153 +1,39 @@
-export const colorThemes = [
+export interface ColorTheme {
+  id: string;
+  name: string;
+  gradient: string;
+}
+
+export const colorThemes: ColorTheme[] = [
   {
-    id: 'pink-violet',
-    name: 'Rosa y Violeta',
-    gradient: 'from-pink-500 to-violet-500',
-    primary: {
-      light: '#F9A8D4',
-      DEFAULT: '#EC4899',
-      dark: '#BE185D',
-    },
-    secondary: {
-      light: '#C4B5FD',
-      DEFAULT: '#8B5CF6',
-      dark: '#6D28D9',
-    }
+    id: 'purple',
+    name: 'Púrpura',
+    gradient: 'from-purple-500 to-pink-500'
   },
   {
-    id: 'blue-purple',
-    name: 'Azul y Morado',
-    gradient: 'from-blue-500 to-purple-500',
-    primary: {
-      light: '#93C5FD',
-      DEFAULT: '#3B82F6',
-      dark: '#1D4ED8',
-    },
-    secondary: {
-      light: '#C084FC',
-      DEFAULT: '#9333EA',
-      dark: '#6B21A8',
-    }
+    id: 'blue',
+    name: 'Azul',
+    gradient: 'from-blue-500 to-cyan-500'
   },
   {
-    id: 'teal-emerald',
-    name: 'Verde Agua y Esmeralda',
-    gradient: 'from-teal-500 to-emerald-500',
-    primary: {
-      light: '#5EEAD4',
-      DEFAULT: '#14B8A6',
-      dark: '#0F766E',
-    },
-    secondary: {
-      light: '#6EE7B7',
-      DEFAULT: '#10B981',
-      dark: '#047857',
-    }
+    id: 'green',
+    name: 'Verde',
+    gradient: 'from-green-500 to-emerald-500'
   },
   {
-    id: 'orange-red',
-    name: 'Naranja y Rojo',
-    gradient: 'from-orange-500 to-red-500',
-    primary: {
-      light: '#FDBA74',
-      DEFAULT: '#F97316',
-      dark: '#C2410C',
-    },
-    secondary: {
-      light: '#FCA5A5',
-      DEFAULT: '#EF4444',
-      dark: '#B91C1C',
-    }
+    id: 'orange',
+    name: 'Naranja',
+    gradient: 'from-orange-500 to-yellow-500'
   },
   {
-    id: 'indigo-sky',
-    name: 'Índigo y Cielo',
-    gradient: 'from-indigo-500 to-sky-500',
-    primary: {
-      light: '#A5B4FC',
-      DEFAULT: '#6366F1',
-      dark: '#4338CA',
-    },
-    secondary: {
-      light: '#7DD3FC',
-      DEFAULT: '#0EA5E9',
-      dark: '#0369A1',
-    }
+    id: 'red',
+    name: 'Rojo',
+    gradient: 'from-red-500 to-rose-500'
   },
   {
-    id: 'rose-pink',
-    name: 'Rosa y Coral',
-    gradient: 'from-rose-500 to-pink-500',
-    primary: {
-      light: '#FDA4AF',
-      DEFAULT: '#F43F5E',
-      dark: '#BE123C',
-    },
-    secondary: {
-      light: '#F9A8D4',
-      DEFAULT: '#EC4899',
-      dark: '#BE185D',
-    }
-  },
-  {
-    id: 'amber-orange',
-    name: 'Ámbar y Naranja',
-    gradient: 'from-amber-500 to-orange-500',
-    primary: {
-      light: '#FCD34D',
-      DEFAULT: '#F59E0B',
-      dark: '#B45309',
-    },
-    secondary: {
-      light: '#FDBA74',
-      DEFAULT: '#F97316',
-      dark: '#C2410C',
-    }
-  },
-  {
-    id: 'lime-green',
-    name: 'Lima y Verde',
-    gradient: 'from-lime-500 to-green-500',
-    primary: {
-      light: '#BEF264',
-      DEFAULT: '#84CC16',
-      dark: '#3F6212',
-    },
-    secondary: {
-      light: '#86EFAC',
-      DEFAULT: '#22C55E',
-      dark: '#15803D',
-    }
-  },
-  {
-    id: 'cyan-blue',
-    name: 'Cian y Azul',
-    gradient: 'from-cyan-500 to-blue-500',
-    primary: {
-      light: '#67E8F9',
-      DEFAULT: '#06B6D4',
-      dark: '#0E7490',
-    },
-    secondary: {
-      light: '#93C5FD',
-      DEFAULT: '#3B82F6',
-      dark: '#1D4ED8',
-    }
-  },
-  {
-    id: 'fuchsia-purple',
-    name: 'Fucsia y Púrpura',
-    gradient: 'from-fuchsia-500 to-purple-500',
-    primary: {
-      light: '#F5D0FE',
-      DEFAULT: '#D946EF',
-      dark: '#A21CAF',
-    },
-    secondary: {
-      light: '#E9D5FF',
-      DEFAULT: '#A855F7',
-      dark: '#7E22CE',
-    }
+    id: 'indigo',
+    name: 'Índigo',
+    gradient: 'from-indigo-500 to-violet-500'
   }
 ];
 
